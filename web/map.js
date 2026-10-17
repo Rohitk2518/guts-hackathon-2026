@@ -24,6 +24,7 @@
   let crowdAt = {}, placeOf = {};   // from the last render: place -> students there, student -> place
   let showClaims = true, speed = 2, activeMoment = null;
   let zk = 1;   // marker scale: shrinks a little when the map zooms in so avatars don't balloon
+  let zoom, layer;   // d3.zoom moves layer; wheel/drag/pinch, the +/- buttons and focus() all go through it
 
   const place = App.placeName;
   const colour = s => App.scoreColor(s);
@@ -71,26 +72,36 @@
       .attr('role', 'img').attr('aria-label', 'Campus map of student locations');
     // circular crop for the avatar images (objectBoundingBox = works at any size)
     svg.append('defs').html('<clipPath id="av-clip" clipPathUnits="objectBoundingBox"><circle cx=".5" cy=".5" r=".5"/></clipPath>');
-    svg.append('image').attr('class', 'basemap').attr('href', 'campus.jpg').attr('width', IMG_W).attr('height', IMG_H);
-    svg.append('rect').attr('class', 'map-shade').attr('width', IMG_W).attr('height', IMG_H);
+    layer = svg.append('g');
+    zoom = d3.zoom().scaleExtent([1, 6]).translateExtent([[base[0], base[1]], [base[0] + base[2], base[1] + base[3]]])
+      .on('zoom', ev => {
+        layer.attr('transform', ev.transform);
+        zk = 1 / Math.sqrt(ev.transform.k);   // avatars and labels grow slower than the map
+        layer.selectAll('.bld-mark').attr('transform', b => `translate(${pos[b.id]}) scale(${zk})`);
+        layer.selectAll('.bld-label').attr('transform', labelAt);
+        if (data) render(App.state);
+      });
+    svg.call(zoom);
+    layer.append('image').attr('class', 'basemap').attr('href', 'campus.jpg').attr('width', IMG_W).attr('height', IMG_H);
+    layer.append('rect').attr('class', 'map-shade').attr('width', IMG_W).attr('height', IMG_H);
 
     // 200 m scale bar: lets viewers judge walking distances (5 km/h is about 80 m a minute)
     const perMetre = 256 * 2 ** Z / (40075016.686 * Math.cos(d3.mean(data.buildings, b => b.lat) * Math.PI / 180));
     const len = 200 * perMetre;
-    const sb = svg.append('g').attr('class', 'scale').attr('transform', `translate(${base[0] + 36},${base[1] + base[3] - 30})`);
+    const sb = layer.append('g').attr('class', 'scale').attr('transform', `translate(${base[0] + 36},${base[1] + base[3] - 30})`);
     sb.append('path').attr('d', `M0,-6V0H${len}V-6`);
     sb.append('text').attr('x', len + 10).text('200 m, about 2.5 min walk');
 
-    const bg = svg.append('g').selectAll('g').data(data.buildings).join('g')
+    const bg = layer.append('g').selectAll('g').data(data.buildings).join('g')
       .attr('class', b => 'bld bld-mark' + (b.isOutdoor ? ' outdoor' : ''))
       .attr('transform', b => `translate(${pos[b.id]}) scale(${zk})`);
     bg.append('rect').attr('x', -11).attr('y', -11).attr('width', 22).attr('height', 22).attr('rx', 5);
     bg.append('title').text(b => b.name + ': ' + hours(b));
 
-    svg.append('g').attr('class', 'trail-layer');
-    svg.append('g').attr('class', 'ghost-layer');
+    layer.append('g').attr('class', 'trail-layer');
+    layer.append('g').attr('class', 'ghost-layer');
 
-    svg.append('g').attr('class', 'markers').selectAll('g').data(data.students, s => s.id).join('g')
+    layer.append('g').attr('class', 'markers').selectAll('g').data(data.students, s => s.id).join('g')
       .attr('class', 'mk').attr('tabindex', 0).attr('role', 'button')
       .attr('aria-label', s => 'Open card for ' + s.name)
       .on('click', (ev, s) => {   // a crowd opens the who's-here picker; someone on their own opens directly
@@ -110,10 +121,10 @@
         d3.select(this).append('title').text(s.name + (s.score > 0 ? ', score ' + s.score.toFixed(1) : ''));
       });
 
-    svg.append('g').attr('class', 'badges');
+    layer.append('g').attr('class', 'badges');
 
     // labels last so crowds never cover them; class bld so open/closed styling still applies
-    svg.append('g').attr('class', 'labels').selectAll('g').data(data.buildings).join('g')
+    layer.append('g').attr('class', 'labels').selectAll('g').data(data.buildings).join('g')
       .attr('class', 'bld bld-label')
       .attr('transform', labelAt)
       .attr('text-anchor', b => LABEL_AT[LABEL[b.id] || 'below'][2])
@@ -371,6 +382,15 @@
 
       const wrap = el.querySelector('.map-wrap');
       draw(wrap);
+      wrap.insertAdjacentHTML('beforeend', `<div class="net-controls map-zoom">
+        <button class="icon-btn" data-z="1.5" aria-label="Zoom in">+</button>
+        <button class="icon-btn" data-z="0.667" aria-label="Zoom out">&minus;</button>
+        <button class="icon-btn" data-z="0" aria-label="Show whole campus"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="8" cy="8" r="5.5"/><circle cx="8" cy="8" r="1.5" fill="currentColor"/></svg></button>
+      </div>`);
+      wrap.querySelector('.map-zoom').onclick = e => {
+        const z = e.target.closest('button')?.dataset.z;
+        if (z) svg.transition().duration(350).call(+z ? zoom.scaleBy : zoom.transform, +z || d3.zoomIdentity);
+      };
       wrap.insertAdjacentHTML('beforeend', '<div class="map-credit">Basemap: Esri, HERE, Garmin, &copy; OpenStreetMap contributors. Avatars: ToonHead by Johan Melin, CC BY 4.0, via DiceBear</div>');
       // keep the map and its controls on one screen
       (el.querySelector('.map-main') || wrap).style.maxWidth = `calc((100vh - ${controls ? 250 : 200}px) * ${base[2] / base[3]})`;
@@ -402,14 +422,9 @@
 
     focus(placeId) {
       if (!svg) return;
-      const p = placeId && pos[placeId], w = base[2] / ZOOM, h = base[3] / ZOOM;
-      const vb = p ? [p[0] - w / 2, p[1] - h / 2, w, h] : base;
-      zk = p ? 1 / Math.sqrt(ZOOM) : 1;   // zoomed in: draw markers smaller so they stay a sensible size on screen
-      const tr = svg.transition().duration(900);
-      tr.attr('viewBox', vb.join(' '));
-      svg.selectAll('.bld-mark').transition(tr).attr('transform', b => `translate(${pos[b.id]}) scale(${zk})`);
-      svg.selectAll('.bld-label').transition(tr).attr('transform', labelAt);
-      render(App.state);
+      const p = placeId && pos[placeId];
+      svg.transition().duration(900).call(zoom.transform, !p ? d3.zoomIdentity
+        : d3.zoomIdentity.translate(base[0] + base[2] / 2, base[1] + base[3] / 2).scale(ZOOM).translate(-p[0], -p[1]));
     },
     highlight(ids) { highlightIds = ids; render(App.state); },
     // minute in [start, end] when most of ids are on campus; findings give the window's first minute

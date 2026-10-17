@@ -182,7 +182,9 @@ button, select, input { font: inherit; color: inherit; }
 .moment.active { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, var(--surface)); }
 
 .map-wrap { position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
-.campus { display: block; width: 100%; height: auto; }
+.campus { display: block; width: 100%; height: auto; cursor: grab; }
+.campus:active { cursor: grabbing; }
+.net-controls.map-zoom { top: 12px; bottom: auto; flex-direction: column; }
 .map-credit { position: absolute; right: 8px; bottom: 6px; font-size: 10px; color: var(--muted); background: var(--halo); padding: 1px 6px; border-radius: 3px; }
 
 .map-bar { display: flex; gap: 12px; align-items: center; margin-top: 12px; }
