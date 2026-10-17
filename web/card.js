@@ -4,7 +4,7 @@
  * On open it jumps the clock to the first contradiction and, on the map, zooms there.
  */
 (function () {
-  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const esc = App.esc;
   const overlaps = (a, b) => a.start < b.end && b.start < a.end;
   const place = id => esc((App.placeById[id] || {}).name || id);
   const span = x => `${App.fmt(x.start)} to ${App.fmt(x.end)}`;

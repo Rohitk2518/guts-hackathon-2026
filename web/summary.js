@@ -1,6 +1,6 @@
 /* summary.js: opening screen, written as a case brief */
 (function () {
-  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const esc = App.esc;
 
   window.Views = window.Views || {};
   window.Views.summary = {
