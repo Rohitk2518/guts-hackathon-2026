@@ -53,7 +53,7 @@
              Clean on paper, connected to everyone.</p>`
           : `<h2>One person keeps turning up.</h2>
              <p>They broke no rules. Their testimony checks out. But look who they were with.</p>
-             <button class="btn gold" id="story-reveal">Reveal the mastermind</button>`}` : `
+             <button class="btn gold" id="story-reveal">Reveal the kingpin</button>`}` : `
         <div class="story-when">${App.fmt(f.time_start)} to ${App.fmt(f.time_end)}, ${place(f.place)}</div>
         <p class="story-finding${App.shortText(f).length > 160 ? ' long' : ''}">${esc(App.shortText(f))}</p>`;
     // flagged and mastermind first; cap the chips so a 19-person finding stays readable
@@ -69,7 +69,7 @@
 
     const rv = el.querySelector('#story-reveal');
     if (rv) rv.onclick = () => { App.setState({ revealMode: true }); show(i); };
-    if (narrate && Views.speech) Views.speech.say(f.reveal ? (kpShown ? `The mastermind is ${f.kp.name}.` : 'One person keeps turning up.') : App.shortText(f));
+    if (narrate && Views.speech) Views.speech.say(f.reveal ? (kpShown ? `The kingpin is ${f.kp.name}.` : 'One person keeps turning up.') : App.shortText(f));
     if (last) setAuto(false);
   }
 

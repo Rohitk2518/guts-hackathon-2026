@@ -129,11 +129,23 @@ button, select, input { font: inherit; color: inherit; }
 
 /* ----- summary: case brief ----- */
 .brief { max-width: 780px; padding: 24px 0 8px; }
+.brief .lead .kp { color: var(--gold); }
+.brief .method { margin-top: 20px; font-size: 13px; color: var(--muted); max-width: 60ch; }
+/* case page: brief on the left, the target building as "Exhibit A" on the right */
+.case-page { display: grid; grid-template-columns: minmax(0, 780px) minmax(260px, 400px); gap: 56px; align-items: start; }
+.exhibit { margin: 32px 0 0; position: sticky; top: 24px; }
+.exhibit img { display: block; width: 100%; height: auto; border-radius: var(--radius); border: 1px solid var(--line);
+  filter: grayscale(1) contrast(1.1) brightness(.85); }
+.exhibit figcaption { margin-top: 10px; font-size: 13px; color: var(--muted); line-height: 1.5; }
+.exhibit figcaption b { color: var(--ink); }
+.exhibit small { display: block; font-size: 11px; opacity: .8; }
+@media (max-width: 1000px) { .case-page { grid-template-columns: 1fr; } .exhibit { display: none; } }
 .brief h1 { font-size: clamp(30px, 4.4vw, 50px); line-height: 1.08; font-weight: 800; margin-bottom: 20px; }
 .brief .lead { font-size: 19px; line-height: 1.6; margin: 0 0 28px; }
 .brief .lead b { font-weight: 700; }
 .brief .lead .sus { color: var(--alert); }
-.redacted { background: var(--ink); color: transparent; border-radius: 2px; padding: 0 2.2em; user-select: none; }
+/* blurred, see-through name; the text underneath is a placeholder, not the real name */
+.redacted { color: transparent; text-shadow: 0 0 10px color-mix(in srgb, var(--ink) 75%, transparent); user-select: none; font-weight: 700; }
 .brief h2 { font-size: 14px; color: var(--muted); font-weight: 600; margin: 36px 0 6px; }
 .findings { list-style: none; padding: 0; margin: 0; border-top: 1px solid var(--line); counter-reset: f; }
 .finding {

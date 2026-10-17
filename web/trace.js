@@ -29,8 +29,8 @@
 
   function verdict() {
     const bad = cmp.claims.filter(c => c.bad).length, left = cmp.stays.filter(x => x.bad).length;
-    const head = s.isKingpin && App.state.revealMode ? 'The mastermind'
-      : s.score >= 7 ? 'Prime suspect' : s.flagged ? 'Suspect'
+    const head = s.isKingpin && App.state.revealMode ? 'The kingpin'
+      : s.score >= 7 ? 'Likely conspirator' : s.flagged ? 'Possible accomplice'
       : met.length >= 3 ? 'Clean on paper, but well connected' : 'Probably not involved';
     const why = [
       s.flags.length ? `Broke ${s.flags.length} rule${s.flags.length > 1 ? 's' : ''}: ${s.flags.map(f => esc(f.detail || f.rule)).join('; ')}.`
@@ -42,7 +42,7 @@
       said.length ? `Mentioned ${said.length} time${said.length > 1 ? 's' : ''} in other students' statements.` : '',
       s.llm_reasoning ? `<span class="muted">Analysis:</span> ${esc(s.llm_reasoning)}` : ''
     ].filter(Boolean);
-    const tone = head === 'The mastermind' ? 'gold' : s.flagged ? 'alert' : '';
+    const tone = head === 'The kingpin' ? 'gold' : s.flagged ? 'alert' : '';
     return `<h3>Verdict</h3><div class="verdict-head ${tone}">${head}</div><ul class="verdict">${why.map(w => `<li>${w}</li>`).join('')}</ul>`;
   }
 

@@ -9,7 +9,7 @@
   const band = s => (s.score >= 7 ? 'high' : s.score >= 4 ? 'med' : s.score > 0 ? 'low' : 'clean');
   const COLOR = { high: 'var(--alert)', med: 'var(--warn)', low: 'var(--low)', clean: 'var(--clean)' };
   const nodeColor = s => COLOR[band(s)];
-  const GROUPS = [['high', 'High score'], ['med', 'Medium'], ['low', 'Low'], ['clean', 'Clean'], ['kp', 'Mastermind']];
+  const GROUPS = [['high', 'High score'], ['med', 'Medium'], ['low', 'Low'], ['clean', 'Clean'], ['kp', 'Kingpin']];
   const inGroup = (key, s) => (key === 'kp' ? s.id === data.kingpin : band(s) === key);
 
   function degree(id) {
@@ -156,9 +156,9 @@
 
   function button() {
     const b = el.querySelector('#reveal');
-    b.textContent = App.state.revealMode ? 'Hide the mastermind' : 'Reveal the mastermind';
+    b.textContent = App.state.revealMode ? 'Hide the kingpin' : 'Reveal the kingpin';
     const k = el.querySelector('#kp-name');
-    k.textContent = App.state.revealMode ? `${App.byId[data.kingpin].name} is the mastermind.` : '';
+    k.textContent = App.state.revealMode ? `${App.byId[data.kingpin].name} is the kingpin.` : '';
   }
 
   window.Views = window.Views || {};
