@@ -99,6 +99,47 @@ def check_teleport(stays):
     return flags
 
 
+def check_identity(stays, people):
+    """Rule IDENTITY: a student ID in the log that is missing from the student table."""
+    flags = []
+    known_ids = set(people["student_id"])
+    for student_id, group in stays.groupby("student_id"):
+        if student_id in known_ids:
+            continue
+        name = group["name"].iloc[0]
+        same_name = people[people["name"] == name]
+        if len(same_name) == 1:
+            hint = f"the student table lists {name} as {same_name['student_id'].iloc[0]}"
+        else:
+            hint = "no student in the table has this name"
+        flags.append({
+            "student_id": student_id,
+            "name": name,
+            "rule": "IDENTITY",
+            "severity": "medium",
+            "detail": f"Log ID {student_id} is not in the student table ({hint})",
+        })
+    return flags
+
+
+def check_age(stays, people):
+    """Rule AGE: under-18s must not be in The Hive (over 18s only)."""
+    flags = []
+    young = people[people["age"] < 18].set_index("student_id")
+    hive = stays[stays["location"] == "The Hive"]
+    for _, stay in hive.iterrows():
+        if stay["student_id"] in young.index:
+            age = int(young.loc[stay["student_id"], "age"])
+            flags.append({
+                "student_id": stay["student_id"],
+                "name": stay["name"],
+                "rule": "AGE",
+                "severity": "high",
+                "detail": f"Aged {age} but logged in The Hive ({stay['time']}), which is over 18s only",
+            })
+    return flags
+
+
 if __name__ == "__main__":
     stays = load_stays()
     hours = load_building_hours()
@@ -106,7 +147,9 @@ if __name__ == "__main__":
     lectures = get_lectures()
     flags = (check_out_of_hours(stays, hours)
              + check_lectures(stays, people, lectures)
-             + check_teleport(stays))
+             + check_teleport(stays)
+             + check_identity(stays, people)
+             + check_age(stays, people))
     print("Total flags:", len(flags))
     for f in flags:
         print(f)
