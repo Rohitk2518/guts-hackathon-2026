@@ -1,0 +1,7 @@
+rule,severity,detail,student_id,name
+TESTIMONY,medium,Claimed 'soup-tasting gang' but student is not a registered member,2522391J,Lee James
+TESTIMONY,high,Claimed to be at 'the park' 22:00–02:20 but no security log entry found,2523112J,Beth Jones
+TESTIMONY,medium,Claimed 'Acapella Society' but student is not a registered member,2595487S,Martin Smith
+TESTIMONY,medium,Claimed 'Whovian society' but student is not a registered member,2611516B,Carolyn Bond
+TESTIMONY,high,Claimed to be at 'home' 15:40–23:30 but no security log entry found,2795502Y,Shaun Yates
+TESTIMONY,high,Claimed to be at 'Kelvingrove Park' 23:30–03:20 but no security log entry found,2795502Y,Shaun Yates

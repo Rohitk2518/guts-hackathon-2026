@@ -1,0 +1,33 @@
+{
+  "claims": [
+    {
+      "place": "Kelvingrove",
+      "start": 420,
+      "end": null,
+      "activity": "early morning stroll; sat on benches alone and read Chronicles of Narnia; reflected on pharmacy course",
+      "society": null
+    },
+    {
+      "place": "QMU",
+      "start": null,
+      "end": null,
+      "activity": "headed there for some food",
+      "society": null
+    },
+    {
+      "place": "GUU",
+      "start": null,
+      "end": null,
+      "activity": "compare the food",
+      "society": null
+    },
+    {
+      "place": "main building",
+      "start": null,
+      "end": null,
+      "activity": "sat on a bench and thought about pharmacy",
+      "society": null
+    }
+  ],
+  "overnight_absence": false
+}

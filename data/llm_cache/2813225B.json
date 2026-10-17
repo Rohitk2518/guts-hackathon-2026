@@ -1,0 +1,40 @@
+{
+  "claims": [
+    {
+      "place": "the Boydy",
+      "start": 600,
+      "end": null,
+      "activity": "attending 10am lecture",
+      "society": null
+    },
+    {
+      "place": "Tesco",
+      "start": null,
+      "end": null,
+      "activity": "grabbing a meal deal",
+      "society": null
+    },
+    {
+      "place": "the park",
+      "start": 720,
+      "end": null,
+      "activity": "having lunch",
+      "society": null
+    },
+    {
+      "place": "St Andrews Building",
+      "start": null,
+      "end": null,
+      "activity": "studying / starting coursework",
+      "society": null
+    },
+    {
+      "place": "HIVE",
+      "start": null,
+      "end": null,
+      "activity": "going to HIVE",
+      "society": null
+    }
+  ],
+  "overnight_absence": false
+}

@@ -1,0 +1,26 @@
+{
+  "claims": [
+    {
+      "place": null,
+      "start": null,
+      "end": null,
+      "activity": "Engineering lecture",
+      "society": null
+    },
+    {
+      "place": "The St Andrews building",
+      "start": null,
+      "end": null,
+      "activity": "visiting The St Andrews building",
+      "society": null
+    },
+    {
+      "place": "the library",
+      "start": null,
+      "end": null,
+      "activity": "finishing up",
+      "society": null
+    }
+  ],
+  "overnight_absence": false
+}

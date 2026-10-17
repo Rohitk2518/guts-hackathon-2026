@@ -1,0 +1,19 @@
+{
+  "claims": [
+    {
+      "place": "the union",
+      "start": null,
+      "end": null,
+      "activity": "break to grab a subway",
+      "society": null
+    },
+    {
+      "place": "the library",
+      "start": null,
+      "end": 1140,
+      "activity": "late night grind",
+      "society": null
+    }
+  ],
+  "overnight_absence": false
+}
