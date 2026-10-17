@@ -1,3 +1,4 @@
+import json
 from itertools import combinations
 
 import pandas as pd
@@ -140,16 +141,27 @@ def check_age(stays, people):
     return flags
 
 
-if __name__ == "__main__":
+def run_all_rules():
+    """Run every rule and return one combined list of flags."""
     stays = load_stays()
     hours = load_building_hours()
     people = load_people()
     lectures = get_lectures()
-    flags = (check_out_of_hours(stays, hours)
-             + check_lectures(stays, people, lectures)
-             + check_teleport(stays)
-             + check_identity(stays, people)
-             + check_age(stays, people))
-    print("Total flags:", len(flags))
-    for f in flags:
-        print(f)
+    return (check_out_of_hours(stays, hours)
+            + check_lectures(stays, people, lectures)
+            + check_teleport(stays)
+            + check_identity(stays, people)
+            + check_age(stays, people))
+
+
+def save_flags(flags, path="data/flags.json"):
+    """Save the flags to a file so other teammates can load them without running our code."""
+    with open(path, "w") as f:
+        json.dump(flags, f, indent=2)
+
+
+if __name__ == "__main__":
+    flags = run_all_rules()
+    save_flags(flags)
+    students = {f["student_id"] for f in flags}
+    print(f"Saved {len(flags)} flags for {len(students)} students to data/flags.json")

@@ -1,0 +1,86 @@
+[
+  {
+    "student_id": "2786843M",
+    "name": "Abdul Murphy",
+    "rule": "OOH",
+    "severity": "high",
+    "detail": "In Boyd Orr Building 2208-2219, outside opening hours"
+  },
+  {
+    "student_id": "2546112P",
+    "name": "Eric Parkin",
+    "rule": "LECTURE",
+    "severity": "low",
+    "detail": "No lecture is listed for Pharmacy, so attendance cannot be checked"
+  },
+  {
+    "student_id": "2712324G",
+    "name": "Jonny Craig",
+    "rule": "LECTURE",
+    "severity": "high",
+    "detail": "No stay in Joseph Black Building during the Chemistry lecture (600-660 min)"
+  },
+  {
+    "student_id": "2774868P",
+    "name": "Alice Patterson",
+    "rule": "LECTURE",
+    "severity": "high",
+    "detail": "No stay in James Watt Building during the Engineering lecture (600-780 min)"
+  },
+  {
+    "student_id": "2456431B",
+    "name": "Oscar Brown",
+    "rule": "TELEPORT",
+    "severity": "high",
+    "detail": "James Watt Building (1000-1300) overlaps Boyd Orr Building (1116-1232) by 76 min"
+  },
+  {
+    "student_id": "2456431B",
+    "name": "Oscar Brown",
+    "rule": "TELEPORT",
+    "severity": "high",
+    "detail": "James Watt Building (1000-1300) overlaps Kelvingrove Park (1210-1532) by 50 min"
+  },
+  {
+    "student_id": "2456431B",
+    "name": "Oscar Brown",
+    "rule": "TELEPORT",
+    "severity": "high",
+    "detail": "Boyd Orr Building (1116-1232) overlaps Kelvingrove Park (1210-1532) by 22 min"
+  },
+  {
+    "student_id": "2456431B",
+    "name": "Oscar Brown",
+    "rule": "TELEPORT",
+    "severity": "high",
+    "detail": "Kelvingrove Park (1210-1532) overlaps QMU (1343-1643) by 109 min"
+  },
+  {
+    "student_id": "2729563B",
+    "name": "Paul Butler",
+    "rule": "TELEPORT",
+    "severity": "high",
+    "detail": "Kelvingrove Park (0824-1037) overlaps James Watt Building (1000-1300) by 37 min"
+  },
+  {
+    "student_id": "2774868P",
+    "name": "Alice Patterson",
+    "rule": "TELEPORT",
+    "severity": "high",
+    "detail": "Library (1635-1750) overlaps St Andrews Building (1625-1700) by 25 min"
+  },
+  {
+    "student_id": "2912324G",
+    "name": "Jonny Craig",
+    "rule": "IDENTITY",
+    "severity": "medium",
+    "detail": "Log ID 2912324G is not in the student table (the student table lists Jonny Craig as 2712324G)"
+  },
+  {
+    "student_id": "2813225B",
+    "name": "Stuart Wands",
+    "rule": "AGE",
+    "severity": "high",
+    "detail": "Aged 17 but logged in The Hive (2208-0048), which is over 18s only"
+  }
+]
