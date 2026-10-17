@@ -1,0 +1,47 @@
+{
+  "claims": [
+    {
+      "place": "St Andrews building",
+      "start": 540,
+      "end": 720,
+      "activity": "lecture about William Wordsworth",
+      "society": null
+    },
+    {
+      "place": "Wolfson cafe",
+      "start": 720,
+      "end": null,
+      "activity": "coffee and cake",
+      "society": null
+    },
+    {
+      "place": "home",
+      "start": null,
+      "end": null,
+      "activity": "prepare some content for the Whovian society",
+      "society": "Whovian society"
+    },
+    {
+      "place": "Adam Smith",
+      "start": null,
+      "end": null,
+      "activity": "team meeting",
+      "society": null
+    },
+    {
+      "place": "St Andrews building",
+      "start": 960,
+      "end": 1020,
+      "activity": "lecture",
+      "society": null
+    },
+    {
+      "place": "home",
+      "start": 1020,
+      "end": null,
+      "activity": "unpaused episode of doctor who",
+      "society": null
+    }
+  ],
+  "overnight_absence": false
+}

@@ -1,0 +1,26 @@
+{
+  "claims": [
+    {
+      "place": "Kelvin building",
+      "start": 540,
+      "end": null,
+      "activity": "physics class",
+      "society": null
+    },
+    {
+      "place": "QMU",
+      "start": 720,
+      "end": null,
+      "activity": "lunch",
+      "society": null
+    },
+    {
+      "place": "home",
+      "start": null,
+      "end": null,
+      "activity": "playing minecraft on the minecraft society server",
+      "society": "minecraft society"
+    }
+  ],
+  "overnight_absence": false
+}

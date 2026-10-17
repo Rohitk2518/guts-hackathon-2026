@@ -13,45 +13,17 @@
  * - clicking a node zooms in and centres it (and opens its interrogation card)
  */
 (function () {
-  const MAX_DEFAULT_EDGES = 500;   // how many of the strongest links to draw initially
-  const KINGPIN_EXTRA_EDGES = 15;  // kingpin's strongest links are always available for the reveal
-  const ZOOM_MIN = 0.4, ZOOM_MAX = 8;
-  const CLICK_ZOOM = 2.5;          // minimum zoom level when a node is clicked
-  const PAN_STEP = 100;            // screen pixels moved by one arrow press
+  let sim, svg, layer, zoom, avSel, nodeSel, linkSel, labelSel, ringSel, el, data, W, H, focusKey = null;
 
-  let sim, svg, viewport, zoomB, nodeSel, linkSel, labelSel, ringSel, el, data, W, H;
-  let validEdges = [], shownEdges = [], skipped = 0, maxW = 1, minW = null;
-  let connected = new Set(), focusId = null;
+  // suspicion band from the score; the legend uses the same bands
+  const band = s => (s.score >= 7 ? 'high' : s.score >= 4 ? 'med' : s.score > 0 ? 'low' : 'clean');
+  const COLOR = { high: 'var(--alert)', med: 'var(--warn)', low: 'var(--low)', clean: 'var(--clean)' };
+  const nodeColor = s => COLOR[band(s)];
+  const GROUPS = [['high', 'High score'], ['med', 'Medium'], ['low', 'Low'], ['clean', 'Clean'], ['kp', 'Mastermind']];
+  const inGroup = (key, s) => (key === 'kp' ? s.id === data.kingpin : band(s) === key);
 
-  const nodeColor = s => (s.flagged ? (s.score >= 6 ? 'var(--alert)' : s.score >= 3 ? 'var(--warn)' : 'var(--low)') : 'var(--clean)');
-  const placeName = p => (App.placeById[p] || {}).name || String(p).replace(/\b\w/g, c => c.toUpperCase());
-  const firstName = s => s.name.split(' ')[0];
-
-  /* drop edges whose endpoints aren't in students[] (e.g. a log row with a mistyped student id) */
-  function prepareEdges() {
-    const ids = new Set(data.students.map(s => s.id));
-    const bad = new Set();
-    validEdges = data.edges.filter(e => {
-      const ok = ids.has(e.a) && ids.has(e.b);
-      if (!ok) { if (!ids.has(e.a)) bad.add(e.a); if (!ids.has(e.b)) bad.add(e.b); }
-      return ok;
-    });
-    skipped = data.edges.length - validEdges.length;
-    if (skipped) console.warn(`network: skipped ${skipped} edges with unknown student ids:`, [...bad]);
-    maxW = d3.max(validEdges, e => e.weight) || 1;
-    if (minW === null) {
-      const sorted = validEdges.map(e => e.weight).sort(d3.descending);
-      minW = sorted.length > MAX_DEFAULT_EDGES ? sorted[MAX_DEFAULT_EDGES - 1] : 0;
-    }
-  }
-
-  function selectEdges() {
-    const kp = data.kingpin;
-    const keep = new Set(validEdges.filter(e => e.weight >= minW));
-    validEdges.filter(e => e.a === kp || e.b === kp)
-      .sort((a, b) => b.weight - a.weight).slice(0, KINGPIN_EXTRA_EDGES)
-      .forEach(e => keep.add(e));
-    shownEdges = [...keep];
+  function degree(id) {
+    return data.edges.filter(e => e.a === id || e.b === id).reduce((t, e) => t + e.weight, 0);
   }
 
   /* ---- zoom / pan ---- */
@@ -97,7 +69,13 @@
     focusId = null;
 
     const wrap = el.querySelector('#network-wrap');
-    wrap.innerHTML = '<svg id="network-svg"></svg>';
+    wrap.innerHTML = `<svg id="network-svg"><defs><clipPath id="net-clip" clipPathUnits="objectBoundingBox"><circle cx=".5" cy=".5" r=".5"/></clipPath></defs></svg>
+      <div class="net-controls">
+        <button class="icon-btn" data-z="in" aria-label="Zoom in">+</button>
+        <button class="icon-btn" data-z="out" aria-label="Zoom out">&minus;</button>
+        <button class="icon-btn" data-z="reset" aria-label="Fit everyone"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="8" cy="8" r="5.5"/><circle cx="8" cy="8" r="1.5" fill="currentColor"/></svg></button>
+        <button class="icon-btn" data-z="full" aria-label="Full screen"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4"/></svg></button>
+      </div>`;
     const node = wrap.querySelector('svg');
     W = node.clientWidth || 900; H = node.clientHeight || 640;
     svg = d3.select(node);
@@ -141,26 +119,12 @@
 
     ringSel = g.append('circle').attr('r', d => d.r).attr('fill', 'none').attr('stroke', 'var(--gold)').attr('stroke-width', 2).attr('opacity', 0);
     nodeSel = g.append('circle').attr('r', d => d.r).attr('fill', d => nodeColor(d.s))
-      .attr('stroke', '#0d1017').attr('stroke-width', 1.5);
-    g.append('title').text(d => `${d.s.name}${d.s.flagged ? ' · score ' + d.s.score.toFixed(1) : ''}`);
-    // with ~160 nodes only flagged students are labelled up front; everyone else shows a name on hover or click
-    labelSel = g.append('text').attr('class', 'node-label').attr('dy', d => d.r + 12)
-      .attr('opacity', d => (d.s.flagged ? 1 : 0)).text(d => firstName(d.s));
-
-    // keep every node (plus its label and the enlarged kingpin) inside the layout area
-    const clampToBounds = () => nodes.forEach(d => {
-      const pad = d.r * 1.6 + 8;
-      d.x = Math.max(pad, Math.min(W - pad, d.x));
-      d.y = Math.max(pad, Math.min(H - pad - 14, d.y));
-    });
-
-    // scale repulsion with node count so crowded graphs still fit
-    const charge = -Math.min(380, 9000 / Math.max(1, nodes.length));
-
-    const render = () => {
-      linkSel.attr('x1', d => d.source.x).attr('y1', d => d.source.y).attr('x2', d => d.target.x).attr('y2', d => d.target.y);
-      g.attr('transform', d => `translate(${d.x},${d.y})`);
-    };
+      .attr('stroke', 'var(--surface)').attr('stroke-width', 2);
+    // face inside the coloured disc; the disc's edge still shows the suspicion colour
+    avSel = g.append('image').attr('class', 'net-av').attr('href', d => `avatars/${d.id}.svg`).attr('clip-path', 'url(#net-clip)')
+      .attr('x', d => -d.r * .82).attr('y', d => -d.r * .82).attr('width', d => d.r * 1.64).attr('height', d => d.r * 1.64);
+    g.append('title').text(d => `${d.s.name}${d.s.score > 0 ? ', score ' + d.s.score.toFixed(1) : ''}`);
+    labelSel = g.append('text').attr('class', 'node-label').attr('dy', d => d.r + 13).text(d => d.s.name.split(' ')[0]);
 
     sim = d3.forceSimulation(nodes)
       .force('link', d3.forceLink(links).distance(d => distance(d.e.weight)).strength(d => strength(d.e.weight)))
@@ -177,7 +141,52 @@
     sim.on('tick', render).alpha(.15).restart();
 
     applyReveal(App.state.revealMode, false);
-    updateEdgeInfo();
+    controls(wrap);
+  }
+
+  // zoom buttons and full screen (bottom-right of the graph)
+  function controls(wrap) {
+    wrap.querySelector('.net-controls').onclick = e => {
+      const z = e.target.closest('[data-z]')?.dataset.z, t = svg.transition().duration(350);
+      if (z === 'in') t.call(zoom.scaleBy, 1.4);
+      if (z === 'out') t.call(zoom.scaleBy, 1 / 1.4);
+      if (z === 'reset') { applyFocus(null); }
+      if (z === 'full') document.fullscreenElement ? document.exitFullscreen() : wrap.requestFullscreen?.();
+    };
+    // the layout was centred for the old size; shift it to the centre of the new one
+    wrap.onfullscreenchange = () => {
+      if (!svg) return;
+      const n = svg.node();
+      svg.transition().duration(400).call(zoom.transform, d3.zoomIdentity.translate((n.clientWidth - W) / 2, (n.clientHeight - H) / 2));
+      wrap.querySelector('[data-z=full]').setAttribute('aria-label', document.fullscreenElement ? 'Exit full screen' : 'Full screen');
+    };
+  }
+
+  // legend click: zoom to that group and fade everyone else; same key again clears
+  function applyFocus(key) {
+    focusKey = key;
+    el.querySelectorAll('.legend-btn').forEach(b => b.classList.toggle('active', b.dataset.g === key));
+    if (!key) {
+      applyReveal(App.state.revealMode, true);
+      const n = svg.node();   // centre for the current size (differs in full screen)
+      svg.transition().duration(700).call(zoom.transform, d3.zoomIdentity.translate((n.clientWidth - W) / 2, (n.clientHeight - H) / 2));
+      return;
+    }
+    const on = d => inGroup(key, d.s), t = d3.transition().duration(500);
+    nodeSel.transition(t).attr('opacity', d => (on(d) ? 1 : .1));
+    avSel.transition(t).attr('opacity', d => (on(d) ? 1 : .1));
+    labelSel.transition(t).attr('opacity', d => (on(d) ? 1 : .05)).text(d => (on(d) ? d.s.name : d.s.name.split(' ')[0]));
+    linkSel.transition(t).attr('opacity', d => (on(d.source) || on(d.target) ? .8 : .04));
+    ringSel.attr('class', d => (on(d) ? 'pulse' : null)).attr('stroke', d => nodeColor(d.s)).attr('opacity', d => (on(d) ? .8 : 0));
+    // wait for the layout to settle a little, then frame the group
+    setTimeout(() => {
+      const pts = sim.nodes().filter(on);
+      if (!pts.length || !svg) return;
+      const [x0, x1] = d3.extent(pts, n => n.x), [y0, y1] = d3.extent(pts, n => n.y);
+      const k = Math.max(.4, Math.min(1.8, .8 / Math.max((x1 - x0 + 80) / W, (y1 - y0 + 80) / H)));
+      const n = svg.node(), cw = n.clientWidth, ch = n.clientHeight;
+      svg.transition().duration(800).call(zoom.transform, d3.zoomIdentity.translate(cw / 2, ch / 2).scale(k).translate(-(x0 + x1) / 2, -(y0 + y1) / 2));
+    }, 300);
   }
 
   function applyReveal(on, animate) {
@@ -190,8 +199,9 @@
 
     nodeSel.transition(t)
       .attr('fill', d => (on && d.id === kp ? 'var(--gold)' : nodeColor(d.s)))
-      .attr('r', d => (on && d.id === kp ? d.r * 1.8 : d.r))
-      .attr('opacity', d => (faded(d) ? .15 : 1));
+      .attr('r', d => (on && d.id === kp ? d.r * 1.6 : d.r))
+      .attr('opacity', d => (on && !d.s.flagged && !connected.has(d.id) ? .15 : 1));
+    avSel.transition(t).attr('opacity', d => (on && !d.s.flagged && !connected.has(d.id) ? .15 : 1));   // faces fade with their disc
     labelSel.transition(t)
       .attr('opacity', d => labelOpacity(d, on))
       .attr('dy', d => (on && d.id === kp ? d.r * 1.8 : d.r) + 12)
@@ -274,6 +284,6 @@
         applyReveal(state.revealMode, true); button();
       }
     },
-    unmount() { if (sim) sim.stop(); sim = null; svg = null; }
+    unmount() { if (document.fullscreenElement) document.exitFullscreen(); if (sim) sim.stop(); sim = null; svg = null; focusKey = null; }
   };
 })();

@@ -1,0 +1,68 @@
+{
+  "claims": [
+    {
+      "place": "Italian Society event",
+      "start": null,
+      "end": null,
+      "activity": "attending Italian Society event",
+      "society": "Italian Society"
+    },
+    {
+      "place": "town",
+      "start": null,
+      "end": null,
+      "activity": "being out in town",
+      "society": null
+    },
+    {
+      "place": "park",
+      "start": null,
+      "end": null,
+      "activity": "relaxed on swings with friend",
+      "society": null
+    },
+    {
+      "place": "home",
+      "start": null,
+      "end": null,
+      "activity": "sleep",
+      "society": null
+    },
+    {
+      "place": "Boyd Orr",
+      "start": null,
+      "end": null,
+      "activity": "lecture",
+      "society": null
+    },
+    {
+      "place": "Boyd Orr",
+      "start": 810,
+      "end": 870,
+      "activity": "nap",
+      "society": null
+    },
+    {
+      "place": "home",
+      "start": null,
+      "end": null,
+      "activity": "sleep some more",
+      "society": null
+    },
+    {
+      "place": "library",
+      "start": null,
+      "end": null,
+      "activity": "late night study session",
+      "society": null
+    },
+    {
+      "place": "home",
+      "start": null,
+      "end": null,
+      "activity": "heading back home",
+      "society": null
+    }
+  ],
+  "overnight_absence": false
+}
