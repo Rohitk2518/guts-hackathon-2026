@@ -79,6 +79,7 @@ button, select, input { font: inherit; color: inherit; }
   position: sticky; top: 0; z-index: 10;
 }
 .brand { font-weight: 800; font-size: 17px; letter-spacing: -.02em; white-space: nowrap; }
+.case-date { font-size: 12px; font-weight: 500; color: var(--muted); margin-left: 12px; letter-spacing: 0; }
 .mock-badge {
   font-size: 11px; font-weight: 600; color: var(--muted); border: 1px solid var(--line);
   padding: 1px 8px; border-radius: 99px; margin-left: 10px; vertical-align: 2px;

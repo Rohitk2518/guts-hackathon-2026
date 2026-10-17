@@ -202,6 +202,12 @@
       App.normalise(App.data);
       App.data.buildings.forEach(b => (App.placeById[b.id] = b));
       document.getElementById('mock-badge').hidden = !(App.data.meta && App.data.meta.mock);
+      // the only date in the data is when the pipeline generated it; the logs themselves carry times only
+      const gen = App.data.meta?.generated, dEl = document.getElementById('case-date');
+      if (gen && !isNaN(new Date(gen))) {
+        dEl.dateTime = gen.slice(0, 10); dEl.hidden = false;
+        dEl.textContent = 'Data generated ' + new Date(gen).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+      }
 
       const tabs = document.getElementById('tabs');
       TABS.forEach(t => {
