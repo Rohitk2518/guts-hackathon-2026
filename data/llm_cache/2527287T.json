@@ -1,0 +1,40 @@
+{
+  "claims": [
+    {
+      "place": "main building",
+      "start": 540,
+      "end": 660,
+      "activity": "attending philosophy class",
+      "society": null
+    },
+    {
+      "place": "union",
+      "start": 675,
+      "end": 960,
+      "activity": "getting coffee, studying, and listening to bands practising",
+      "society": null
+    },
+    {
+      "place": "Kelvingrove park",
+      "start": 960,
+      "end": 1080,
+      "activity": "walking normal loop",
+      "society": null
+    },
+    {
+      "place": "Boyd Orr",
+      "start": 1080,
+      "end": 1085,
+      "activity": "grabbing yoga mat",
+      "society": null
+    },
+    {
+      "place": "home",
+      "start": null,
+      "end": null,
+      "activity": "going home",
+      "society": null
+    }
+  ],
+  "overnight_absence": false
+}

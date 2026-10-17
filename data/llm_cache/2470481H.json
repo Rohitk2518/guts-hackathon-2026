@@ -1,0 +1,26 @@
+{
+  "claims": [
+    {
+      "place": "James Watt Building",
+      "start": null,
+      "end": 660,
+      "activity": "kicked around / waited for lecture",
+      "society": null
+    },
+    {
+      "place": "QMU",
+      "start": 795,
+      "end": null,
+      "activity": "unwind and grab dinner",
+      "society": null
+    },
+    {
+      "place": "library",
+      "start": null,
+      "end": 1320,
+      "activity": "speedrun coursework",
+      "society": null
+    }
+  ],
+  "overnight_absence": false
+}

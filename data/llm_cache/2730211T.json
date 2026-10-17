@@ -1,0 +1,26 @@
+{
+  "claims": [
+    {
+      "place": "KG skate park",
+      "start": null,
+      "end": null,
+      "activity": "calm themselves down",
+      "society": null
+    },
+    {
+      "place": "Boyd Orr",
+      "start": 600,
+      "end": null,
+      "activity": "attend lecture",
+      "society": null
+    },
+    {
+      "place": "library",
+      "start": null,
+      "end": null,
+      "activity": "complete assignment",
+      "society": null
+    }
+  ],
+  "overnight_absence": false
+}

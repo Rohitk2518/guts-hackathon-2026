@@ -1,0 +1,54 @@
+{
+  "claims": [
+    {
+      "place": null,
+      "start": 540,
+      "end": null,
+      "activity": "physics lecture",
+      "society": null
+    },
+    {
+      "place": "Glasgow University Union",
+      "start": null,
+      "end": 660,
+      "activity": "met friend Beth",
+      "society": null
+    },
+    {
+      "place": "HIVE",
+      "start": null,
+      "end": null,
+      "activity": "go to HIVE",
+      "society": null
+    },
+    {
+      "place": "the park",
+      "start": null,
+      "end": null,
+      "activity": "met back up with Beth and tried to speak it out",
+      "society": null
+    },
+    {
+      "place": "QMU",
+      "start": null,
+      "end": null,
+      "activity": "going to QMU",
+      "society": null
+    },
+    {
+      "place": "GUU",
+      "start": null,
+      "end": null,
+      "activity": "went to GUU",
+      "society": null
+    },
+    {
+      "place": "home",
+      "start": null,
+      "end": 1320,
+      "activity": "went home",
+      "society": null
+    }
+  ],
+  "overnight_absence": true
+}

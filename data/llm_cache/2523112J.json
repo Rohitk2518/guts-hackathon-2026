@@ -1,0 +1,54 @@
+{
+  "claims": [
+    {
+      "place": null,
+      "start": 630,
+      "end": null,
+      "activity": "early drinks with Russell",
+      "society": null
+    },
+    {
+      "place": null,
+      "start": 780,
+      "end": null,
+      "activity": "medicine lecture",
+      "society": null
+    },
+    {
+      "place": "QMU",
+      "start": null,
+      "end": null,
+      "activity": "Big Band Society event",
+      "society": "Big Band Society"
+    },
+    {
+      "place": "the park",
+      "start": null,
+      "end": null,
+      "activity": "relax at the park",
+      "society": null
+    },
+    {
+      "place": "QMU",
+      "start": null,
+      "end": null,
+      "activity": "attend Big Band Society event and argue with Russell",
+      "society": "Big Band Society"
+    },
+    {
+      "place": "the union",
+      "start": 1320,
+      "end": null,
+      "activity": "leave the union to meet Olivia",
+      "society": null
+    },
+    {
+      "place": "the park",
+      "start": 1320,
+      "end": 140,
+      "activity": "meet Olivia and sit on swings talking about life",
+      "society": null
+    }
+  ],
+  "overnight_absence": false
+}
