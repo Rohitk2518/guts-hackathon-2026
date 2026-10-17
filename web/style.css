@@ -174,13 +174,32 @@ button, select, input { font: inherit; color: inherit; }
 .scrubber text { fill: var(--bg); font-size: 11px; font-weight: 700; }
 
 /* ----- network ----- */
-#network-svg { width: 100%; height: max(380px, calc(100vh - 250px)); background: var(--surface); border-radius: var(--radius); border: 1px solid var(--line); }
-.node-label { fill: var(--ink); font-size: 11px; pointer-events: none; text-anchor: middle; paint-order: stroke; stroke: var(--halo); stroke-width: 3px; }
-.link { stroke: var(--line); stroke-linecap: round; }
+#network-svg { width: 100%; height: 640px; background: var(--bg-2); border-radius: var(--radius); border: 1px solid var(--line); }
+.node-label { fill: var(--text); font-size: 11px; pointer-events: none; text-anchor: middle; }
+.link { stroke: #55627f; stroke-linecap: round; }
 .link.kingpin-link { stroke: var(--gold); stroke-dasharray: 6 5; animation: dash 1.2s linear infinite; }
 @keyframes dash { to { stroke-dashoffset: -22; } }
 .pulse { animation: pulse 1.6s ease-out infinite; transform-box: fill-box; transform-origin: center; }
-@keyframes pulse { 0% { transform: scale(1); opacity: .8; } 100% { transform: scale(2.4); opacity: 0; } }
+@keyframes pulse { 0% { transform: scale(1); opacity: .8; } 100% { transform: scale(2.2); opacity: 0; } }
+
+/* network navigation bar (overlaid along the bottom of the graph) */
+.net-controls {
+  padding: 6px 8px; background: rgba(26, 33, 48, .88); backdrop-filter: blur(6px);
+  border: 1px solid var(--line); border-radius: 999px; box-shadow: 0 6px 24px rgba(0, 0, 0, .45);
+}
+.net-btn {
+  min-width: 34px; height: 34px; padding: 0 10px; border: 0; border-radius: 999px; cursor: pointer;
+  background: var(--panel-2); color: var(--text); font: inherit; font-weight: 700; font-size: 15px; line-height: 1;
+}
+.net-btn:hover { background: var(--accent); color: #04202e; }
+.net-fit { font-size: 13px; padding: 0 14px; }
+.net-sep { width: 1px; height: 20px; background: var(--line); margin: 0 4px; }
+
+@media (max-width: 800px) {
+  .stats { grid-template-columns: repeat(2, 1fr); }
+  .findings { grid-template-columns: 1fr; }
+  .hero h1 { font-size: 32px; }
+}
 
 /* ----- map: layout ----- */
 .map-layout { display: grid; grid-template-columns: minmax(0, 1fr) 290px; gap: 24px; align-items: start; }

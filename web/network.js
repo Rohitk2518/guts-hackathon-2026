@@ -6,13 +6,22 @@
  * - edges that reference an unknown student id are skipped (and logged), not allowed to crash the graph
  * - only the strongest edges are drawn by default (slider lets you lower the cut-off)
  * - widths, distances and node sizes are scaled from the data, not hard-coded for 0..1 weights
+ *
+ * Navigation:
+ * - mouse wheel / pinch zooms, drag the background to pan
+ * - button bar along the bottom: pan arrows, zoom out / in, fit
+ * - clicking a node zooms in and centres it (and opens its interrogation card)
  */
 (function () {
   const MAX_DEFAULT_EDGES = 500;   // how many of the strongest links to draw initially
   const KINGPIN_EXTRA_EDGES = 15;  // kingpin's strongest links are always available for the reveal
+  const ZOOM_MIN = 0.4, ZOOM_MAX = 8;
+  const CLICK_ZOOM = 2.5;          // minimum zoom level when a node is clicked
+  const PAN_STEP = 100;            // screen pixels moved by one arrow press
 
-  let sim, svg, nodeSel, linkSel, labelSel, ringSel, el, data, W, H;
+  let sim, svg, viewport, zoomB, nodeSel, linkSel, labelSel, ringSel, el, data, W, H;
   let validEdges = [], shownEdges = [], skipped = 0, maxW = 1, minW = null;
+  let connected = new Set(), focusId = null;
 
   const nodeColor = s => (s.flagged ? (s.score >= 6 ? 'var(--alert)' : s.score >= 3 ? 'var(--warn)' : 'var(--low)') : 'var(--clean)');
   const placeName = p => (App.placeById[p] || {}).name || String(p).replace(/\b\w/g, c => c.toUpperCase());
@@ -45,18 +54,59 @@
     shownEdges = [...keep];
   }
 
+  /* ---- zoom / pan ---- */
+  function zoomToNode(d) {
+    const k = Math.max(d3.zoomTransform(svg.node()).k, CLICK_ZOOM);
+    const t = d3.zoomIdentity.translate(W / 2, H / 2).scale(k).translate(-d.x, -d.y);
+    svg.transition().duration(600).call(zoomB.transform, t);
+  }
+
+  function control(action) {
+    if (!svg) return;
+    const k = d3.zoomTransform(svg.node()).k;
+    const t = svg.transition().duration(250);
+    switch (action) {
+      case 'in':    zoomB.scaleBy(t, 1.5); break;
+      case 'out':   zoomB.scaleBy(t, 1 / 1.5); break;
+      case 'left':  zoomB.translateBy(t, PAN_STEP / k, 0); break;   // moving the view left moves the content right
+      case 'right': zoomB.translateBy(t, -PAN_STEP / k, 0); break;
+      case 'up':    zoomB.translateBy(t, 0, PAN_STEP / k); break;
+      case 'down':  zoomB.translateBy(t, 0, -PAN_STEP / k); break;
+      case 'fit':
+        focusId = null; updateLabels();
+        zoomB.transform(t, d3.zoomIdentity);
+        break;
+    }
+  }
+
+  /* ---- labels: flagged students, the kingpin on reveal, and whichever node was last clicked ---- */
+  function labelOpacity(d, on) {
+    const kp = data.kingpin;
+    if (d.id === focusId) return 1;
+    if (on && d.id === kp) return 1;
+    const faded = on && !d.s.flagged && !connected.has(d.id);
+    return d.s.flagged && !faded ? 1 : 0;
+  }
+  function updateLabels() {
+    if (labelSel) labelSel.attr('opacity', d => labelOpacity(d, App.state.revealMode));
+  }
+
   function build() {
     if (sim) sim.stop();
     selectEdges();
+    focusId = null;
 
     const wrap = el.querySelector('#network-wrap');
     wrap.innerHTML = '<svg id="network-svg"></svg>';
     const node = wrap.querySelector('svg');
     W = node.clientWidth || 900; H = node.clientHeight || 640;
     svg = d3.select(node);
-    layer = svg.append('g');
-    zoom = d3.zoom().scaleExtent([.4, 4]).on('zoom', ev => layer.attr('transform', ev.transform));
-    svg.call(zoom);
+
+    // everything that should zoom/pan lives inside this group
+    viewport = svg.append('g').attr('class', 'viewport');
+    zoomB = d3.zoom().scaleExtent([ZOOM_MIN, ZOOM_MAX])
+      .on('zoom', ev => viewport.attr('transform', ev.transform));
+    svg.call(zoomB).on('dblclick.zoom', null).style('cursor', 'grab');
 
     // weighted degree over all valid edges, scaled into a modest radius range
     const deg = {};
@@ -72,13 +122,18 @@
     const strength = w => 0.03 + 0.5 * (w / maxW);
     const distance = w => 150 - 100 * (w / maxW);
 
-    linkSel = svg.append('g').selectAll('line').data(links).join('line')
+    linkSel = viewport.append('g').selectAll('line').data(links).join('line')
       .attr('class', 'link').attr('stroke-width', d => width(d.e.weight)).attr('opacity', .35);
     linkSel.append('title').text(d =>
       `${App.byId[d.e.a].name} and ${App.byId[d.e.b].name}: ${d.e.overlap_min} min at ${placeName(d.e.place)}`);
 
-    const g = layer.append('g').selectAll('g').data(nodes).join('g').style('cursor', 'pointer')
-      .on('click', (ev, d) => App.selectStudent(d.id))
+    const g = viewport.append('g').selectAll('g').data(nodes).join('g').style('cursor', 'pointer')
+      .on('click', (ev, d) => {
+        focusId = d.id;
+        updateLabels();
+        zoomToNode(d);
+        App.selectStudent(d.id);
+      })
       .call(d3.drag()
         .on('start', (ev, d) => { if (!ev.active) sim.alphaTarget(.3).restart(); d.fx = d.x; d.fy = d.y; })
         .on('drag', (ev, d) => { d.fx = ev.x; d.fy = ev.y; })
@@ -88,11 +143,11 @@
     nodeSel = g.append('circle').attr('r', d => d.r).attr('fill', d => nodeColor(d.s))
       .attr('stroke', '#0d1017').attr('stroke-width', 1.5);
     g.append('title').text(d => `${d.s.name}${d.s.flagged ? ' · score ' + d.s.score.toFixed(1) : ''}`);
-    // with ~160 nodes only flagged students are labelled up front; everyone else shows a name on hover
+    // with ~160 nodes only flagged students are labelled up front; everyone else shows a name on hover or click
     labelSel = g.append('text').attr('class', 'node-label').attr('dy', d => d.r + 12)
       .attr('opacity', d => (d.s.flagged ? 1 : 0)).text(d => firstName(d.s));
 
-    // keep every node (plus its label and the enlarged kingpin) inside the SVG
+    // keep every node (plus its label and the enlarged kingpin) inside the layout area
     const clampToBounds = () => nodes.forEach(d => {
       const pad = d.r * 1.6 + 8;
       d.x = Math.max(pad, Math.min(W - pad, d.x));
@@ -128,7 +183,7 @@
   function applyReveal(on, animate) {
     if (!sim) return;
     const kp = data.kingpin;
-    const connected = new Set([kp]);
+    connected = new Set([kp]);
     shownEdges.forEach(e => { if (e.a === kp) connected.add(e.b); if (e.b === kp) connected.add(e.a); });
     const faded = d => on && !d.s.flagged && !connected.has(d.id);
     const t = d3.transition().duration(animate === false ? 0 : 900);
@@ -138,7 +193,8 @@
       .attr('r', d => (on && d.id === kp ? d.r * 1.8 : d.r))
       .attr('opacity', d => (faded(d) ? .15 : 1));
     labelSel.transition(t)
-      .attr('opacity', d => (on && d.id === kp ? 1 : (d.s.flagged && !faded(d) ? 1 : 0)))
+      .attr('opacity', d => labelOpacity(d, on))
+      .attr('dy', d => (on && d.id === kp ? d.r * 1.8 : d.r) + 12)
       .text(d => (on && d.id === kp ? d.s.name : firstName(d.s)));
     ringSel.attr('class', d => (on && d.id === kp ? 'pulse' : null))
       .attr('opacity', d => (on && d.id === kp ? .8 : 0));
@@ -156,7 +212,7 @@
 
   function button() {
     const b = el.querySelector('#reveal');
-    b.textContent = App.state.revealMode ? 'Hide the mastermind' : 'Reveal the mastermind';
+    b.textContent = App.state.revealMode ? '↩ Hide the Mastermind' : '👁 Reveal the Mastermind';
     const k = el.querySelector('#kp-name');
     k.textContent = App.state.revealMode ? `${App.byId[data.kingpin].name} is the mastermind.` : '';
   }
@@ -172,6 +228,7 @@
     mount(container, d) {
       el = container; data = d;
       prepareEdges();
+      // layout is set inline so the controls sit over the bottom of the graph even if style.css is stale
       el.innerHTML = `
         <div class="toolbar">
           <h2 style="margin:0">Network</h2>
@@ -182,23 +239,41 @@
           </label>
           <span class="muted" style="font-size:13px" id="edge-info"></span>
         </div>
-        <div id="network-wrap"></div>
+        <div class="net-stage" style="position:relative">
+          <div id="network-wrap"></div>
+          <div class="net-controls" role="toolbar" aria-label="Network navigation"
+               style="position:absolute;left:50%;bottom:14px;transform:translateX(-50%);display:flex;gap:6px;align-items:center;z-index:5">
+            <button class="net-btn" data-act="left"  title="Pan left"  aria-label="Pan left">◀</button>
+            <button class="net-btn" data-act="up"    title="Pan up"    aria-label="Pan up">▲</button>
+            <button class="net-btn" data-act="down"  title="Pan down"  aria-label="Pan down">▼</button>
+            <button class="net-btn" data-act="right" title="Pan right" aria-label="Pan right">▶</button>
+            <span class="net-sep"></span>
+            <button class="net-btn" data-act="out"   title="Zoom out"  aria-label="Zoom out">−</button>
+            <button class="net-btn" data-act="in"    title="Zoom in"   aria-label="Zoom in">+</button>
+            <button class="net-btn net-fit" data-act="fit" title="Reset view" aria-label="Reset view">Fit</button>
+          </div>
+        </div>
         <div class="legend">
           <span><i style="background:var(--alert);border-radius:50%"></i>High score</span>
           <span><i style="background:var(--warn);border-radius:50%"></i>Medium</span>
           <span><i style="background:var(--low);border-radius:50%"></i>Low</span>
           <span><i style="background:var(--clean);border-radius:50%"></i>Clean</span>
           <span><i style="background:var(--gold);border-radius:50%"></i>Mastermind</span>
-          <span>Line width = time together, corrected for crowd size. Hover a node for its name.</span>
+          <span>Line width = time together, corrected for crowd size. Scroll to zoom, drag to pan, click a node to centre it.</span>
         </div>`;
       el.querySelector('#reveal').onclick = () => App.setState({ revealMode: !App.state.revealMode });
       el.querySelector('#minw').onchange = e => { minW = +e.target.value; build(); };
+      el.querySelectorAll('.net-btn').forEach(b => { b.onclick = () => control(b.dataset.act); });
       build();
       button();
     },
     update(state, patch) {
-      if ('revealMode' in patch) { applyReveal(state.revealMode, true); button(); if (focusKey) applyFocus(focusKey); }
+      if ('revealMode' in patch) {
+        // the kingpin is pinned to the middle of the layout, so reset the view or it can end up off-screen
+        if (state.revealMode) control('fit');
+        applyReveal(state.revealMode, true); button();
+      }
     },
-    unmount() { if (sim) sim.stop(); sim = null; svg = null; focusKey = null; }
+    unmount() { if (sim) sim.stop(); sim = null; svg = null; }
   };
 })();
