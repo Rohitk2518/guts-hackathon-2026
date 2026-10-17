@@ -1,21 +1,30 @@
 /* map.js: campus map on a real street basemap (Som)
  * campus.jpg = Esri World Street Map tiles, zoom 17, x 63972-63978, y 40896-40900, stitched once
  * so the demo works offline. Buildings use the same Web Mercator maths so they sit on their outlines.
- * Student dots sit in the building they are logged in at state.currentTime, or walk between two
- * buildings when the gap between stays is short.
  *
- * Views.map.mount(el, data, { controls:false }) lets story.js embed the map.
+ * Students are person icons coloured by suspicion. At state.currentTime each one is in the building
+ * they are logged in, or walking between two buildings when the gap is short.
+ * Extras: moment chips (from findings), speed, names toggle, testimony ghosts (where they said they
+ * were, when the logs disagree), trail for the selected student, live side panel.
+ *
+ * Views.map.mount(el, data, { controls:false }) lets story.js embed the bare map.
  * Views.map.focus(placeId | null) zooms; Views.map.highlight(ids | null) fades everyone else.
  */
 (function () {
   const Z = 17, X0 = 63972, Y0 = 40896, IMG_W = 1792, IMG_H = 1280;
   const PAD = 110, ZOOM = 2.2;
-  const WALK_MAX = 30;   // ponytail: gaps longer than this hide the dot (left campus); tune if real data looks sparse
+  const WALK_MAX = 30;   // ponytail: gaps longer than this hide the person (left campus); tune if real data looks sparse
   // label side per building where the default (below) collides; tune by eye
-  const LABEL = { boyd_orr: 'left', sir_alwyn: 'above', adam_smith: 'above', hive: 'above', kelvin: 'right', guu: 'right' };
-  const LABEL_AT = { below: [0, 32, 'middle'], above: [0, -36, 'middle'], left: [-20, 5, 'end'], right: [20, 5, 'start'] };
+  const LABEL = { boyd_orr: 'left', sir_alwyn: 'above', adam_smith: 'above', hive: 'above', kelvin: 'right', guu: 'right', kelvingrove: 'far' };
+  const LABEL_AT = { far: [-54, 5, 'end'], below: [0, 32, 'middle'], above: [0, -36, 'middle'], left: [-20, 5, 'end'], right: [20, 5, 'start'] };
+  // person glyph: head + shoulders, centred on (0,0), about 22 units tall
+  const PERSON = 'M0,-11a4.6,4.6 0 1 1 0,9.2a4.6,4.6 0 1 1 0,-9.2zM-7.5,11c0,-6 3,-9.2 7.5,-9.2s7.5,3.2 7.5,9.2z';
 
-  let svg, data, pos = {}, stays = {}, timer = null, highlightIds = null, base;
+  let svg, data, pos = {}, stays = {}, timer = null, highlightIds = null, base, el, opts = {};
+  let showClaims = true, speed = 2, activeMoment = null;
+
+  const place = id => (App.placeById[id] || {}).name || id;
+  const colour = s => !s.flagged ? 'var(--clean)' : s.score >= 7 ? 'var(--alert)' : s.score >= 4 ? 'var(--warn)' : 'var(--low)';
 
   // lat/lng -> pixel on campus.jpg (Web Mercator, same as the tiles)
   function merc(lat, lng) {
@@ -42,18 +51,20 @@
     return null;
   }
 
+  const covers = (x, t) => x.start != null && ((t >= x.start && t < x.end) || (t + 1440 >= x.start && t + 1440 < x.end));
+
   function hours(b) {
     if (b.isOutdoor || b.opens === b.closes) return 'Open all day';
     return App.fmt(b.opens) + ' to ' + App.fmt(b.closes);
   }
 
-  function draw(el) {
+  function draw(wrap) {
     data.buildings.forEach(b => (pos[b.id] = merc(b.lat, b.lng)));
     const xs = Object.values(pos).map(p => p[0]), ys = Object.values(pos).map(p => p[1]);
     const x0 = Math.max(0, d3.min(xs) - PAD), y0 = Math.max(0, d3.min(ys) - PAD);
     base = [x0, y0, Math.min(IMG_W, d3.max(xs) + PAD) - x0, Math.min(IMG_H, d3.max(ys) + PAD) - y0];
 
-    svg = d3.select(el).append('svg').attr('class', 'campus').attr('viewBox', base.join(' '))
+    svg = d3.select(wrap).append('svg').attr('class', 'campus').attr('viewBox', base.join(' '))
       .style('aspect-ratio', `${base[2]} / ${base[3]}`)
       .attr('role', 'img').attr('aria-label', 'Campus map of student locations');
     svg.append('image').attr('class', 'basemap').attr('href', 'campus.jpg').attr('width', IMG_W).attr('height', IMG_H);
@@ -69,7 +80,7 @@
     const bg = svg.append('g').selectAll('g').data(data.buildings).join('g')
       .attr('class', b => 'bld' + (b.isOutdoor ? ' outdoor' : ''))
       .attr('transform', b => `translate(${pos[b.id]})`);
-    bg.append('rect').attr('x', -11).attr('y', -11).attr('width', 22).attr('height', 22).attr('rx', 4);
+    bg.append('rect').attr('x', -11).attr('y', -11).attr('width', 22).attr('height', 22).attr('rx', 5);
     const lbl = bg.append('g').each(function (b) {
       const [x, y, anchor] = LABEL_AT[LABEL[b.id] || 'below'];
       d3.select(this).attr('transform', `translate(${x},${y})`).attr('text-anchor', anchor);
@@ -78,103 +89,233 @@
     lbl.append('text').attr('class', 'bld-hours').attr('y', 17).text(hours);
     bg.append('title').text(b => b.name + ': ' + hours(b));
 
+    svg.append('g').attr('class', 'trail-layer');
+    svg.append('g').attr('class', 'ghost-layer');
+
     svg.append('g').attr('class', 'markers').selectAll('g').data(data.students, s => s.id).join('g')
       .attr('class', 'mk').attr('tabindex', 0).attr('role', 'button')
       .attr('aria-label', s => 'Open card for ' + s.name)
       .on('click', (ev, s) => App.selectStudent(s.id))
       .on('keydown', (ev, s) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); App.selectStudent(s.id); } })
       .each(function (s) {
-        const g = d3.select(this);
-        if (s.flagged) g.append('circle').attr('class', 'ring pulse').attr('r', 10);
-        g.append('circle').attr('class', 'dot').attr('r', s.flagged ? 10 : 7);
+        const g = d3.select(this), k = s.flagged ? 1.6 : 1.15;
+        g.append('circle').attr('class', 'hit').attr('r', 22);
+        if (s.flagged) g.append('circle').attr('class', 'ring pulse').attr('r', 19).attr('stroke', colour(s));
+        g.append('path').attr('class', 'person').attr('d', PERSON).attr('transform', `scale(${k})`);
+        g.append('text').attr('class', 'mk-name').attr('y', 34).text(s.name.split(' ')[0]);
         g.append('title').text(s.name + (s.flagged ? ', score ' + s.score.toFixed(1) : ''));
       });
   }
 
   function render(state) {
     if (!svg) return;
-    const t = state.currentTime ?? 480;
+    const t = state.currentTime ?? 480, sel = state.selectedStudent;
     svg.classed('night', App.isNight(t)).classed('reveal', state.revealMode);
     svg.selectAll('.bld').classed('closed', b => !isOpen(b, t));
 
-    const slot = {};   // spread students sharing a building around its centre
-    let here = 0;
+    const slot = {}, at = {}, xy = {};   // slot spreads people sharing a building; at = place -> students
     svg.selectAll('.mk').each(function (s) {
       const w = where(s, t), g = d3.select(this);
       if (!w) return g.attr('display', 'none');
-      here++;
       let x, y;
       if (w.place) {
         const i = slot[w.place] = (slot[w.place] ?? -1) + 1;
-        const a = i * 2.4, r = 20 + 6 * Math.sqrt(i);
+        const a = i * 2.4, r = 24 + 7 * Math.sqrt(i);
         [x, y] = pos[w.place] || [0, 0];
         x += r * Math.cos(a); y += r * Math.sin(a);
+        (at[w.place] = at[w.place] || []).push(s);
       } else {
         const [ax, ay] = pos[w.from] || [0, 0], [bx, by] = pos[w.to] || [0, 0];
         x = ax + (bx - ax) * w.f; y = ay + (by - ay) * w.f;
       }
+      xy[s.id] = [x, y];
+      const gold = state.revealMode && s.isKingpin;
       g.attr('display', null).attr('transform', `translate(${x},${y})`)
-        .attr('class', 'mk' + (s.flagged ? ' flagged' : ' clean') + (s.isKingpin ? ' kingpin' : '') +
-          (state.selectedStudent === s.id ? ' selected' : '') +
+        .attr('class', 'mk' + (s.flagged ? ' flagged' : ' clean') + (s.isKingpin ? ' kingpin' : '') + (sel === s.id ? ' selected' : '') +
           ((highlightIds && !highlightIds.includes(s.id)) || (state.revealMode && !s.flagged && !s.isKingpin) ? ' dim' : ''));
+      g.select('.person').attr('fill', gold ? 'var(--gold)' : colour(s));
     });
-    const count = document.getElementById('map-count');
-    if (count) count.textContent = `${here} of ${data.students.length} students on campus`;
-    const now = document.getElementById('map-now');
-    if (now) now.textContent = App.fmt(t);
+
+    drawTrail(sel, t, xy);
+    drawGhosts(t, sel);
+    renderSide(state, t, at, xy);
   }
 
-  function stop(btn) { clearInterval(timer); timer = null; if (btn) btn.textContent = 'Play the day'; }
+  // dashed numbered route through the selected student's stays up to now
+  function drawTrail(id, t, xy) {
+    const layer = svg.select('.trail-layer').html('');
+    if (!id || !stays[id]) return;
+    const pts = stays[id].filter(st => st.start <= t && pos[st.place]).map(st => pos[st.place]);
+    if (xy[id]) pts.push(xy[id]);
+    if (pts.length < 2) return;
+    layer.append('path').attr('class', 'trail').attr('d', d3.line()(pts));
+    pts.slice(0, -1).forEach((p, i) => {
+      layer.append('circle').attr('class', 'trail-stop').attr('cx', p[0]).attr('cy', p[1]).attr('r', 12);
+      layer.append('text').attr('class', 'trail-n').attr('x', p[0]).attr('y', p[1]).text(i + 1);
+    });
+  }
+
+  // dashed ring where a flagged (or selected) student says they were, when the logs put them elsewhere
+  function drawGhosts(t, sel) {
+    const list = !showClaims ? [] : data.students.filter(s => s.flagged || s.id === sel).flatMap(s => {
+      const c = s.claims.find(c => covers(c, t) && pos[c.place]);
+      const w = c && where(s, t);
+      return c && (!w || w.place !== c.place) ? [{ s, c }] : [];
+    });
+    const g = svg.select('.ghost-layer').selectAll('g.ghost').data(list, d => d.s.id).join(enter => {
+      const e = enter.append('g').attr('class', 'ghost');
+      e.append('circle').attr('r', 20);
+      e.append('text').attr('y', -28);
+      return e;
+    });
+    g.attr('transform', (d, i) => { const [x, y] = pos[d.c.place]; return `translate(${x - 40 - 18 * i},${y - 34})`; });
+    g.select('circle').attr('stroke', d => colour(d.s));
+    g.select('text').attr('fill', d => colour(d.s)).text(d => d.s.name.split(' ')[0] + ' says here');
+  }
+
+  function renderSide(state, t, at, xy) {
+    if (!el || opts.controls === false) return;
+    const q = s => el.querySelector(s);
+    const flaggedAt = Object.entries(at).map(([p, ss]) => [p, ss.filter(s => s.flagged || (state.revealMode && s.isKingpin))]);
+    const here = Object.keys(xy).length;
+    const alerts = data.students.filter(s => s.flags.some(f => covers(f, t))).length;
+    q('#st-here').textContent = here;
+    q('#st-alerts').textContent = alerts;
+    q('#map-now').textContent = App.fmt(t);
+
+    const kp = App.byId[data.kingpin];
+    const kpBox = q('#st-kp');
+    if (state.revealMode && kp) {
+      const flagged = data.students.filter(s => s.flagged).map(s => s.id);
+      const met = new Set(data.edges.filter(e => e.a === kp.id || e.b === kp.id).map(e => (e.a === kp.id ? e.b : e.a)).filter(id => flagged.includes(id)));
+      kpBox.hidden = false;
+      kpBox.querySelector('.stat-n').textContent = `${met.size} / ${flagged.length}`;
+      kpBox.querySelector('.stat-l').textContent = `flagged students ${kp.name.split(' ')[0]} has met`;
+    } else kpBox.hidden = true;
+
+    const groups = flaggedAt.filter(([, ss]) => ss.length >= 2);
+    q('#map-feed').innerHTML = groups.length
+      ? groups.map(([p, ss]) => `<li><time>${App.fmt(t)}</time><span>${ss.map(s => s.name.split(' ')[0]).join(', ')} together at ${place(p)}</span></li>`).join('')
+      : '<li class="empty">No suspects together right now.</li>';
+
+    const s = App.byId[state.selectedStudent];
+    const who = q('#map-who');
+    who.hidden = !s;
+    if (s) {
+      const route = stays[s.id];
+      who.innerHTML = `
+        <div class="who-name">${s.name}</div>
+        <div class="who-sub">${[s.subject, s.flagged ? 'score ' + s.score.toFixed(1) : 'not flagged'].filter(Boolean).join(', ')}</div>
+        <div>${s.flags.map(f => `<span class="chip ${f.severity === 'high' ? '' : f.severity}">${f.rule}</span>`).join('')}</div>
+        <ol class="route">${route.map(st => `<li class="${covers(st, t) ? 'now' : st.end <= t ? 'past' : ''}"><time>${App.fmt(st.start)}</time><span>${place(st.place)}</span></li>`).join('')}</ol>`;
+    }
+  }
+
+  function setPlaying(on) {
+    clearInterval(timer); timer = null;
+    const btn = el && el.querySelector('#map-play');
+    if (on) {
+      timer = setInterval(() => {
+        const t = (App.state.currentTime ?? 0) + speed;
+        if (t > 1439) return setPlaying(false);
+        App.setState({ currentTime: t });
+      }, 40);
+    }
+    if (btn) {
+      btn.innerHTML = on
+        ? '<svg viewBox="0 0 16 16" fill="currentColor"><rect x="3" y="2" width="3.5" height="12" rx="1"/><rect x="9.5" y="2" width="3.5" height="12" rx="1"/></svg>'
+        : '<svg viewBox="0 0 16 16" fill="currentColor"><path d="M4 2.5v11a1 1 0 0 0 1.5.86l9-5.5a1 1 0 0 0 0-1.72l-9-5.5A1 1 0 0 0 4 2.5z"/></svg>';
+      btn.setAttribute('aria-label', on ? 'Pause' : 'Play the day');
+    }
+  }
 
   window.Views = window.Views || {};
   window.Views.map = {
-    mount(el, d, opts = {}) {
-      data = d; pos = {}; highlightIds = null;
+    mount(container, d, o = {}) {
+      el = container; data = d; opts = o; pos = {}; highlightIds = null; activeMoment = null;
       data.students.forEach(s => (stays[s.id] = s.stays.slice().sort((a, b) => a.start - b.start)));
-      const controls = opts.controls !== false;
-      el.innerHTML = '<div class="map-stage">' + (controls ? `
-        <div class="toolbar">
-          <h2 style="margin:0">Campus map</h2>
-          <span class="muted" id="map-count"></span>
-        </div>` : '') + `
-        <div class="map-wrap"><div class="map-credit">Basemap: Esri, HERE, Garmin, &copy; OpenStreetMap contributors</div></div>` +
-        (controls ? `
-        <div class="map-bar">
-          <button class="btn" id="map-play">Play the day</button>
-          <input type="range" id="map-time" class="map-time" min="0" max="1439" step="1" aria-label="Time of day">
-          <span class="map-now" id="map-now"></span>
-        </div>` : '') + `
-        <div class="legend">
-          <span><i style="background:var(--alert)"></i>Flagged student</span>
-          <span><i style="background:var(--clean)"></i>Other student</span>
-          <span><i style="background:var(--gold)"></i>Mastermind, after the reveal</span>
-          <span><i style="background:var(--indoor);border-radius:2px"></i>Building open</span>
-          <span><i style="border:1px dashed var(--clean);border-radius:2px"></i>Building closed</span>
-        </div></div>`;
-      draw(el.querySelector('.map-wrap'));
-      // fit the whole map plus controls on one screen
-      el.querySelector('.map-stage').style.maxWidth = `calc((100vh - ${controls ? 270 : 200}px) * ${base[2] / base[3]})`;
+      const controls = o.controls !== false;
+      // one chip per time + place; findings that share both merge their students
+      const byKey = {};
+      data.findings.forEach(f => {
+        const k = f.time_start + '|' + f.place;
+        if (byKey[k]) byKey[k].students = [...new Set([...byKey[k].students, ...f.students])];
+        else byKey[k] = { ...f, students: [...f.students] };
+      });
+      const moments = Object.values(byKey).sort((a, b) => a.time_start - b.time_start);
 
-      const range = el.querySelector('#map-time'), btn = el.querySelector('#map-play');
-      if (range) {
-        range.oninput = () => App.setState({ currentTime: +range.value });
-        btn.onclick = () => {
-          if (timer) return stop(btn);
-          btn.textContent = 'Pause';
-          timer = setInterval(() => {
-            const t = (App.state.currentTime ?? 0) + 2;
-            if (t > 1439) return stop(btn);
-            App.setState({ currentTime: t });
-          }, 40);
-        };
-      }
+      el.innerHTML = !controls ? '<div class="map-wrap"></div>' : `
+        <div class="map-layout">
+          <div class="map-main">
+            <div class="map-head">
+              <h2>Campus map</h2>
+              <button class="moment active" data-i="-1">Whole campus</button>
+              ${moments.map((f, i) => `<button class="moment" data-i="${i}"><b>${App.fmt(f.time_start)}</b>${place(f.place)}</button>`).join('')}
+            </div>
+            <div class="map-wrap"></div>
+            <div class="map-bar">
+              <button class="icon-btn" id="map-play"></button>
+              <select id="map-speed" aria-label="Playback speed">
+                <option value="1">1×</option><option value="2" selected>2×</option><option value="5">5×</option><option value="10">10×</option>
+              </select>
+              <input type="range" id="map-time" class="map-time" min="0" max="1439" step="1" aria-label="Time of day">
+              <span class="map-now" id="map-now"></span>
+            </div>
+          </div>
+          <aside class="map-side">
+            <div class="panel stats">
+              <div class="stat"><div class="stat-n" id="st-here">0</div><div class="stat-l">on campus</div></div>
+              <div class="stat"><div class="stat-n alert" id="st-alerts">0</div><div class="stat-l">alerts now</div></div>
+              <div class="stat wide" id="st-kp" hidden><div class="stat-n gold"></div><div class="stat-l"></div></div>
+            </div>
+            <div class="panel"><h3>Right now</h3><ul class="feed" id="map-feed"></ul></div>
+            <div class="panel" id="map-who" hidden></div>
+            <div class="panel opts">
+              <label><input type="checkbox" id="opt-names"> Show suspect names</label>
+              <label><input type="checkbox" id="opt-claims" checked> Show testimony claims</label>
+            </div>
+            <div class="panel legend">
+              <span><i style="background:var(--alert)"></i>High suspicion</span>
+              <span><i style="background:var(--warn)"></i>Medium</span>
+              <span><i style="background:var(--low)"></i>Low</span>
+              <span><i style="background:var(--clean)"></i>Not flagged</span>
+              <span><i style="background:var(--gold)"></i>Mastermind, after the reveal</span>
+              <span><i style="border:2px dashed var(--alert);background:none"></i>Where they say they were</span>
+              <span><i style="background:var(--indoor);border-radius:2px"></i>Building open</span>
+              <span><i style="border:1px dashed var(--clean);border-radius:2px;background:none"></i>Building closed</span>
+            </div>
+          </aside>
+        </div>`;
+
+      const wrap = el.querySelector('.map-wrap');
+      draw(wrap);
+      wrap.insertAdjacentHTML('beforeend', '<div class="map-credit">Basemap: Esri, HERE, Garmin, &copy; OpenStreetMap contributors</div>');
+      // keep the map and its controls on one screen
+      (el.querySelector('.map-main') || wrap).style.maxWidth = `calc((100vh - ${controls ? 250 : 200}px) * ${base[2] / base[3]})`;
+      if (!controls) return;
+
+      const range = el.querySelector('#map-time');
+      range.oninput = () => App.setState({ currentTime: +range.value });
+      el.querySelector('#map-play').onclick = () => setPlaying(!timer);
+      el.querySelector('#map-speed').onchange = e => (speed = +e.target.value);
+      el.querySelector('#opt-names').onchange = e => svg.classed('show-names', e.target.checked);
+      el.querySelector('#opt-claims').onchange = e => { showClaims = e.target.checked; render(App.state); };
+      el.querySelectorAll('.moment').forEach(b => (b.onclick = () => {
+        const f = moments[+b.dataset.i];
+        el.querySelectorAll('.moment').forEach(m => m.classList.toggle('active', m === b));
+        setPlaying(false);
+        this.focus(f ? f.place : null);
+        highlightIds = f ? f.students : null;
+        App.setState(f ? { currentTime: f.time_start } : {});
+      }));
       this._range = range;
+      setPlaying(false);
     },
     update(state) {
       if (this._range) this._range.value = state.currentTime ?? 480;
       render(state);
     },
-    unmount() { stop(); svg = null; },
+    unmount() { setPlaying(false); svg = null; el = null; this._range = null; },
 
     focus(placeId) {
       if (!svg) return;
@@ -184,7 +325,7 @@
     },
     highlight(ids) { highlightIds = ids; render(App.state); },
 
-    _test: { isOpen, where, merc }
+    _test: { isOpen, where, merc, covers }
   };
 
   // self-check: open hours that wrap past midnight, walking between stays, projection lands on the image
@@ -194,6 +335,7 @@
   stays.t = [{ place: 'a', start: 100, end: 200 }, { place: 'b', start: 220, end: 300 }];
   console.assert(T.where({ id: 't' }, 150).place === 'a' && T.where({ id: 't' }, 210).f === .5 && !T.where({ id: 't' }, 400), 'where');
   delete stays.t;
+  console.assert(T.covers({ start: 1380, end: 1500 }, 30) && !T.covers({ start: 100, end: 200 }, 300), 'covers past midnight');
   const [bx, by] = T.merc(55.8735737, -4.2926741);   // Boyd Orr
   console.assert(bx > 0 && bx < IMG_W && by > 0 && by < IMG_H, 'merc on image');
 })();

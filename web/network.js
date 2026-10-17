@@ -35,7 +35,7 @@
 
     ringSel = g.append('circle').attr('r', d => d.r).attr('fill', 'none').attr('stroke', 'var(--gold)').attr('stroke-width', 2).attr('opacity', 0);
     nodeSel = g.append('circle').attr('r', d => d.r).attr('fill', d => nodeColor(d.s))
-      .attr('stroke', '#fff').attr('stroke-width', 2);
+      .attr('stroke', 'var(--surface)').attr('stroke-width', 2);
     g.append('title').text(d => `${d.s.name}${d.s.flagged ? ', score ' + d.s.score.toFixed(1) : ''}`);
     labelSel = g.append('text').attr('class', 'node-label').attr('dy', d => d.r + 13).text(d => d.s.name.split(' ')[0]);
 
