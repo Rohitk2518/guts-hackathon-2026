@@ -6,11 +6,6 @@
  * - edges that reference an unknown student id are skipped (and logged), not allowed to crash the graph
  * - only the strongest edges are drawn by default (slider lets you lower the cut-off)
  * - widths, distances and node sizes are scaled from the data, not hard-coded for 0..1 weights
- *
- * Navigation:
- * - mouse wheel / pinch zooms, drag the background to pan
- * - button bar along the bottom: pan arrows, zoom out / in, fit
- * - clicking a node zooms in and centres it (and opens its interrogation card)
  */
 (function () {
   let sim, svg, layer, zoom, avSel, nodeSel, linkSel, labelSel, ringSel, el, data, W, H, focusKey = null;
@@ -26,47 +21,9 @@
     return data.edges.filter(e => e.a === id || e.b === id).reduce((t, e) => t + e.weight, 0);
   }
 
-  /* ---- zoom / pan ---- */
-  function zoomToNode(d) {
-    const k = Math.max(d3.zoomTransform(svg.node()).k, CLICK_ZOOM);
-    const t = d3.zoomIdentity.translate(W / 2, H / 2).scale(k).translate(-d.x, -d.y);
-    svg.transition().duration(600).call(zoomB.transform, t);
-  }
-
-  function control(action) {
-    if (!svg) return;
-    const k = d3.zoomTransform(svg.node()).k;
-    const t = svg.transition().duration(250);
-    switch (action) {
-      case 'in':    zoomB.scaleBy(t, 1.5); break;
-      case 'out':   zoomB.scaleBy(t, 1 / 1.5); break;
-      case 'left':  zoomB.translateBy(t, PAN_STEP / k, 0); break;   // moving the view left moves the content right
-      case 'right': zoomB.translateBy(t, -PAN_STEP / k, 0); break;
-      case 'up':    zoomB.translateBy(t, 0, PAN_STEP / k); break;
-      case 'down':  zoomB.translateBy(t, 0, -PAN_STEP / k); break;
-      case 'fit':
-        focusId = null; updateLabels();
-        zoomB.transform(t, d3.zoomIdentity);
-        break;
-    }
-  }
-
-  /* ---- labels: flagged students, the kingpin on reveal, and whichever node was last clicked ---- */
-  function labelOpacity(d, on) {
-    const kp = data.kingpin;
-    if (d.id === focusId) return 1;
-    if (on && d.id === kp) return 1;
-    const faded = on && !d.s.flagged && !connected.has(d.id);
-    return d.s.flagged && !faded ? 1 : 0;
-  }
-  function updateLabels() {
-    if (labelSel) labelSel.attr('opacity', d => labelOpacity(d, App.state.revealMode));
-  }
-
   function build() {
     if (sim) sim.stop();
     selectEdges();
-    focusId = null;
 
     const wrap = el.querySelector('#network-wrap');
     wrap.innerHTML = `<svg id="network-svg"><defs><clipPath id="net-clip" clipPathUnits="objectBoundingBox"><circle cx=".5" cy=".5" r=".5"/></clipPath></defs></svg>
@@ -79,12 +36,9 @@
     const node = wrap.querySelector('svg');
     W = node.clientWidth || 900; H = node.clientHeight || 640;
     svg = d3.select(node);
-
-    // everything that should zoom/pan lives inside this group
-    viewport = svg.append('g').attr('class', 'viewport');
-    zoomB = d3.zoom().scaleExtent([ZOOM_MIN, ZOOM_MAX])
-      .on('zoom', ev => viewport.attr('transform', ev.transform));
-    svg.call(zoomB).on('dblclick.zoom', null).style('cursor', 'grab');
+    layer = svg.append('g');
+    zoom = d3.zoom().scaleExtent([.4, 4]).on('zoom', ev => layer.attr('transform', ev.transform));
+    svg.call(zoom);
 
     // weighted degree over all valid edges, scaled into a modest radius range
     const deg = {};
@@ -100,18 +54,13 @@
     const strength = w => 0.03 + 0.5 * (w / maxW);
     const distance = w => 150 - 100 * (w / maxW);
 
-    linkSel = viewport.append('g').selectAll('line').data(links).join('line')
+    linkSel = svg.append('g').selectAll('line').data(links).join('line')
       .attr('class', 'link').attr('stroke-width', d => width(d.e.weight)).attr('opacity', .35);
     linkSel.append('title').text(d =>
       `${App.byId[d.e.a].name} and ${App.byId[d.e.b].name}: ${d.e.overlap_min} min at ${placeName(d.e.place)}`);
 
-    const g = viewport.append('g').selectAll('g').data(nodes).join('g').style('cursor', 'pointer')
-      .on('click', (ev, d) => {
-        focusId = d.id;
-        updateLabels();
-        zoomToNode(d);
-        App.selectStudent(d.id);
-      })
+    const g = layer.append('g').selectAll('g').data(nodes).join('g').style('cursor', 'pointer')
+      .on('click', (ev, d) => App.selectStudent(d.id))
       .call(d3.drag()
         .on('start', (ev, d) => { if (!ev.active) sim.alphaTarget(.3).restart(); d.fx = d.x; d.fy = d.y; })
         .on('drag', (ev, d) => { d.fx = ev.x; d.fy = ev.y; })
@@ -192,7 +141,7 @@
   function applyReveal(on, animate) {
     if (!sim) return;
     const kp = data.kingpin;
-    connected = new Set([kp]);
+    const connected = new Set([kp]);
     shownEdges.forEach(e => { if (e.a === kp) connected.add(e.b); if (e.b === kp) connected.add(e.a); });
     const faded = d => on && !d.s.flagged && !connected.has(d.id);
     const t = d3.transition().duration(animate === false ? 0 : 900);
@@ -203,8 +152,7 @@
       .attr('opacity', d => (on && !d.s.flagged && !connected.has(d.id) ? .15 : 1));
     avSel.transition(t).attr('opacity', d => (on && !d.s.flagged && !connected.has(d.id) ? .15 : 1));   // faces fade with their disc
     labelSel.transition(t)
-      .attr('opacity', d => labelOpacity(d, on))
-      .attr('dy', d => (on && d.id === kp ? d.r * 1.8 : d.r) + 12)
+      .attr('opacity', d => (on && d.id === kp ? 1 : (d.s.flagged && !faded(d) ? 1 : 0)))
       .text(d => (on && d.id === kp ? d.s.name : firstName(d.s)));
     ringSel.attr('class', d => (on && d.id === kp ? 'pulse' : null))
       .attr('opacity', d => (on && d.id === kp ? .8 : 0));
@@ -222,7 +170,7 @@
 
   function button() {
     const b = el.querySelector('#reveal');
-    b.textContent = App.state.revealMode ? '↩ Hide the Mastermind' : '👁 Reveal the Mastermind';
+    b.textContent = App.state.revealMode ? 'Hide the mastermind' : 'Reveal the mastermind';
     const k = el.querySelector('#kp-name');
     k.textContent = App.state.revealMode ? `${App.byId[data.kingpin].name} is the mastermind.` : '';
   }
@@ -238,7 +186,6 @@
     mount(container, d) {
       el = container; data = d;
       prepareEdges();
-      // layout is set inline so the controls sit over the bottom of the graph even if style.css is stale
       el.innerHTML = `
         <div class="toolbar">
           <h2 style="margin:0">Network</h2>
@@ -249,40 +196,22 @@
           </label>
           <span class="muted" style="font-size:13px" id="edge-info"></span>
         </div>
-        <div class="net-stage" style="position:relative">
-          <div id="network-wrap"></div>
-          <div class="net-controls" role="toolbar" aria-label="Network navigation"
-               style="position:absolute;left:50%;bottom:14px;transform:translateX(-50%);display:flex;gap:6px;align-items:center;z-index:5">
-            <button class="net-btn" data-act="left"  title="Pan left"  aria-label="Pan left">◀</button>
-            <button class="net-btn" data-act="up"    title="Pan up"    aria-label="Pan up">▲</button>
-            <button class="net-btn" data-act="down"  title="Pan down"  aria-label="Pan down">▼</button>
-            <button class="net-btn" data-act="right" title="Pan right" aria-label="Pan right">▶</button>
-            <span class="net-sep"></span>
-            <button class="net-btn" data-act="out"   title="Zoom out"  aria-label="Zoom out">−</button>
-            <button class="net-btn" data-act="in"    title="Zoom in"   aria-label="Zoom in">+</button>
-            <button class="net-btn net-fit" data-act="fit" title="Reset view" aria-label="Reset view">Fit</button>
-          </div>
-        </div>
+        <div id="network-wrap"></div>
         <div class="legend">
           <span><i style="background:var(--alert);border-radius:50%"></i>High score</span>
           <span><i style="background:var(--warn);border-radius:50%"></i>Medium</span>
           <span><i style="background:var(--low);border-radius:50%"></i>Low</span>
           <span><i style="background:var(--clean);border-radius:50%"></i>Clean</span>
           <span><i style="background:var(--gold);border-radius:50%"></i>Mastermind</span>
-          <span>Line width = time together, corrected for crowd size. Scroll to zoom, drag to pan, click a node to centre it.</span>
+          <span>Line width = time together, corrected for crowd size. Hover a node for its name.</span>
         </div>`;
       el.querySelector('#reveal').onclick = () => App.setState({ revealMode: !App.state.revealMode });
       el.querySelector('#minw').onchange = e => { minW = +e.target.value; build(); };
-      el.querySelectorAll('.net-btn').forEach(b => { b.onclick = () => control(b.dataset.act); });
       build();
       button();
     },
     update(state, patch) {
-      if ('revealMode' in patch) {
-        // the kingpin is pinned to the middle of the layout, so reset the view or it can end up off-screen
-        if (state.revealMode) control('fit');
-        applyReveal(state.revealMode, true); button();
-      }
+      if ('revealMode' in patch) { applyReveal(state.revealMode, true); button(); if (focusKey) applyFocus(focusKey); }
     },
     unmount() { if (document.fullscreenElement) document.exitFullscreen(); if (sim) sim.stop(); sim = null; svg = null; focusKey = null; }
   };

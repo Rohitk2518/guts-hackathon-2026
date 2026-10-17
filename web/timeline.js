@@ -109,22 +109,6 @@
           .append('title').text(`${cp.name}: ${App.fmt(c.start)} to ${App.fmt(c.end)}`);
       });
 
-      s.claims.forEach(c => {
-        s.stays.forEach(st => {
-          const spl = App.placeById[st.place] || { name: st.place };
-          const cpl = App.placeById[c.place] || { name: c.place };
-          if (spl != cpl){
-            const start = Math.max(c.start, st.start);
-            const end = Math.min(c.end, st.end);
-            if (end - start > 0){
-              const r = lane.append('rect')
-                .attr('x', x(start) - 1).attr('y', 1).attr('width', end-start).attr('height', LANE - 5).attr('rx', 4)
-                .attr('fill', 'none').attr('stroke', 'var(--warn)').attr('stroke-width', 2);
-            }
-          }
-        });
-      });
-
       // flags (outline + marker)
       let lastLabel = -Infinity;
       s.flags.filter(f => f.start != null).sort((a, b) => a.start - b.start).forEach(f => {
