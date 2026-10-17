@@ -9,7 +9,7 @@
   let svg, x, showAll = false, showStays = true, showClaims = true, el, data, drawn = false;
 
   const sevColor = { high: 'var(--alert)', med: 'var(--warn)', low: 'var(--low)' };
-
+  
   /* ---- flag popover: an HTML div, fixed-positioned so the chart's scroll area can't clip it ---- */
   let pop = null;
   function closePop() {
@@ -94,8 +94,8 @@
         const pl = App.placeById[st.place] || { name: st.place };
         lane.append('rect')
           .attr('x', x(st.start)).attr('y', 4)
-          .attr('width', Math.max(3, x(st.end) - x(st.start))).attr('height', LANE - 11).attr('rx', 3)
-          .attr('fill', 'var(--stay)').attr('opacity', .6)
+          .attr('width', Math.max(3, x(st.end) - x(st.start))).attr('height', LANE - 20).attr('rx', 3)
+          .attr('fill', 'var(--stay)')
           .append('title').text(`${pl.name}: ${App.fmt(st.start)} to ${App.fmt(st.end)}`);
       });
 
@@ -103,8 +103,8 @@
       (showClaims ? s.claims : []).forEach(c => {
         const cp = App.placeById[c.place] || {name: c.place};
         lane.append('rect')
-          .attr('x', x(c.start)).attr('y', 4)
-          .attr('width', Math.max(3, x(c.end) - x(c.start))).attr('height', LANE - 11).attr('rx', 3)
+          .attr('x', x(c.start)).attr('y', 15)
+          .attr('width', Math.max(3, x(c.end) - x(c.start))).attr('height', LANE - 20).attr('rx', 3)
           .attr('fill', 'var(--claim)').attr('opacity', .6)
           .append('title').text(`${cp.name}: ${App.fmt(c.start)} to ${App.fmt(c.end)}`);
       });
@@ -165,18 +165,20 @@
           <label><input type="checkbox" id="all"> Include clean students</label>
           <label><input type="checkbox" id="show-stays"> Show stays (logs)</label>
           <label><input type="checkbox" id="show-claims"> Show claims (testimony)</label>
-          <span class="muted" style="font-size:13px">Drag or click to move the clock. Click a name to open their card.</span>
-        </div>
+          <div>
+            <span class="muted" style="font-size:13px">Drag or click to move the clock. Click a name to open their card.</span>
+          </div>
+          <div class="legend">
+            <span><i style="background:var(--stay)"></i>Logged stay</span>
+            <span><i style="background:var(--claim)"></i>Claimed stay</span>
+            <span><i style="border:2px solid var(--alert)"></i>High flag</span>
+            <span><i style="border:2px solid var(--warn)"></i>Medium flag</span>
+            <span><i style="border:2px solid var(--low)"></i>Low flag</span>
+            <span><i style="background:var(--night)"></i>Night / closed hours</span>
+          </div>
+          </div>
         <div class="chart-wrap"></div>
-        <div class="legend">
-          <span><i style="background:var(--stay)"></i>Logged stay</span>
-          <span><i style="background:var(--claim)"></i>Claimed stay</span>
-          <span><i style="background:var(--clean)"></i>Claimed location</span>
-          <span><i style="border:2px solid var(--alert)"></i>High flag</span>
-          <span><i style="border:2px solid var(--warn)"></i>Medium flag</span>
-          <span><i style="border:2px solid var(--low)"></i>Low flag</span>
-          <span><i style="background:var(--night)"></i>Night / closed hours</span>
-        </div>`;
+        `;
       el.querySelector('#all').checked = showAll;
       el.querySelector('#all').onchange = e => { showAll = e.target.checked; draw(); };
       el.querySelector('#show-stays').checked = showStays;
