@@ -1,3 +1,5 @@
+from itertools import combinations
+
 import pandas as pd
 from lectures import get_lectures
 
@@ -79,12 +81,32 @@ def check_lectures(stays, people, lectures):
     return flags
 
 
+def check_teleport(stays):
+    """Rule TELEPORT: flag a student logged in two places at the same time."""
+    flags = []
+    for student_id, group in stays.groupby("student_id"):
+        for (_, a), (_, b) in combinations(group.iterrows(), 2):
+            # Two time ranges overlap if each one starts before the other ends
+            if a["check_in_minutes"] < b["check_out_minutes"] and b["check_in_minutes"] < a["check_out_minutes"]:
+                overlap = min(a["check_out_minutes"], b["check_out_minutes"]) - max(a["check_in_minutes"], b["check_in_minutes"])
+                flags.append({
+                    "student_id": student_id,
+                    "name": a["name"],
+                    "rule": "TELEPORT",
+                    "severity": "high",
+                    "detail": f"{a['location']} ({a['time']}) overlaps {b['location']} ({b['time']}) by {overlap} min",
+                })
+    return flags
+
+
 if __name__ == "__main__":
     stays = load_stays()
     hours = load_building_hours()
     people = load_people()
     lectures = get_lectures()
-    flags = check_out_of_hours(stays, hours) + check_lectures(stays, people, lectures)
+    flags = (check_out_of_hours(stays, hours)
+             + check_lectures(stays, people, lectures)
+             + check_teleport(stays))
     print("Total flags:", len(flags))
     for f in flags:
         print(f)
