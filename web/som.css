@@ -1,0 +1,32 @@
+/* som.css: map, story, card. Uses Danielle's tokens from style.css. */
+
+/* ----- map ----- */
+.map-wrap { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.campus { display: block; width: 100%; height: auto; max-height: 72vh; }
+.map-time { flex: 1; min-width: 160px; accent-color: var(--accent); }
+
+.map-ground { fill: var(--bg-2); transition: fill .8s; }
+.campus.night .map-ground { fill: var(--night); }
+.park { fill: var(--outdoor); opacity: .16; }
+
+.bld rect { fill: var(--indoor); stroke: none; transition: fill .4s, opacity .4s; filter: drop-shadow(0 0 6px rgba(90, 123, 214, .7)); }
+.bld.outdoor rect { fill: var(--outdoor); filter: none; rx: 8; }
+.bld.closed rect { fill: transparent; stroke: var(--muted); stroke-dasharray: 3 2; filter: none; opacity: .6; }
+.bld text { pointer-events: none; }
+.bld-name { fill: var(--text); font-size: 11px; font-weight: 600; }
+.bld-hours { fill: var(--muted); font-size: 9px; }
+.bld.closed .bld-name { fill: var(--muted); }
+
+.mk { cursor: pointer; transition: opacity .3s; }
+.mk .dot { stroke: var(--bg); stroke-width: 1; }
+.mk.clean .dot { fill: var(--clean); opacity: .55; }
+.mk.flagged .dot { fill: var(--alert); }
+.mk .ring { fill: none; stroke: var(--alert); stroke-width: 1.5; }
+.campus.reveal .mk.kingpin .dot { fill: var(--gold); opacity: 1; r: 8; }
+.mk.selected .dot { stroke: var(--accent); stroke-width: 2.5; }
+.mk.dim { opacity: .12; }
+.mk:focus-visible .dot { stroke: var(--accent); stroke-width: 3; }
+
+@media (prefers-reduced-motion: reduce) {
+  .pulse { animation: none; }
+}
