@@ -23,10 +23,11 @@
   const HAIR = 'M-5,-6.2a5,5 0 0 1 10,0q-2,-1.6 -5,-1.4q-3,.2 -5,1.4z';
 
   let svg, data, pos = {}, stays = {}, timer = null, highlightIds = null, base, el, opts = {};
+  let crowdAt = {}, placeOf = {};   // from the last render: place -> students there, student -> place
   let showClaims = true, speed = 2, activeMoment = null;
 
   const place = App.placeName;
-  const colour = s => !s.flagged ? 'var(--clean)' : s.score >= 7 ? 'var(--alert)' : s.score >= 4 ? 'var(--warn)' : 'var(--low)';
+  const colour = s => App.scoreColor(s);
 
   // lat/lng -> pixel on campus.jpg (Web Mercator, same as the tiles)
   function merc(lat, lng) {
@@ -91,7 +92,10 @@
     svg.append('g').attr('class', 'markers').selectAll('g').data(data.students, s => s.id).join('g')
       .attr('class', 'mk').attr('tabindex', 0).attr('role', 'button')
       .attr('aria-label', s => 'Open card for ' + s.name)
-      .on('click', (ev, s) => App.selectStudent(s.id))
+      .on('click', (ev, s) => {   // a crowd opens the who's-here picker; someone on their own opens directly
+        const p = placeOf[s.id], crowd = p && crowdAt[p];
+        if (crowd && crowd.length > 1) showPicker(ev, p, crowd); else App.selectStudent(s.id);
+      })
       .on('keydown', (ev, s) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); App.selectStudent(s.id); } })
       .each(function (s) {
         const g = d3.select(this), k = s.flagged ? 1.6 : .95;
@@ -148,6 +152,8 @@
 
     drawTrail(sel, t, xy);
     drawGhosts(t, sel);
+    crowdAt = at;
+    placeOf = Object.fromEntries(Object.entries(at).flatMap(([p, ss]) => ss.map(s => [s.id, p])));
     renderSide(state, t, at, xy);
   }
 
@@ -183,6 +189,27 @@
     g.select('text').attr('fill', d => colour(d.s)).text(d => d.s.name.split(' ')[0] + ' says here');
   }
 
+  // list everyone at one building so the right person can be picked out of a crowd
+  function showPicker(ev, p, crowd) {
+    const wrap = svg.node().parentNode, box = wrap.getBoundingClientRect();
+    wrap.querySelector('.picker')?.remove();
+    const people = crowd.slice().sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
+    const pk = document.createElement('div');
+    pk.className = 'picker';
+    pk.innerHTML = `<div class="picker-head">${people.length} people at ${place(p)}</div>
+      <ul>${people.map(s => `<li><button data-id="${App.esc(s.id)}"><i style="background:${colour(s)}"></i>${App.esc(s.name)}${s.score > 0 ? `<b>${s.score.toFixed(1)}</b>` : ''}</button></li>`).join('')}</ul>`;
+    wrap.appendChild(pk);
+    // open next to the click, kept inside the map
+    pk.style.left = Math.min(ev.clientX - box.left + 10, box.width - pk.offsetWidth - 8) + 'px';
+    pk.style.top = Math.max(8, Math.min(ev.clientY - box.top - 20, box.height - pk.offsetHeight - 8)) + 'px';
+    pk.querySelector('button').focus();
+    const close = () => { pk.remove(); document.removeEventListener('pointerdown', outside, true); };
+    const outside = e => { if (!pk.contains(e.target)) close(); };
+    document.addEventListener('pointerdown', outside, true);
+    pk.onkeydown = e => { if (e.key === 'Escape') close(); };
+    pk.onclick = e => { const id = e.target.closest('button')?.dataset.id; if (id) { close(); App.selectStudent(id); } };
+  }
+
   function renderSide(state, t, at, xy) {
     if (!el || opts.controls === false) return;
     const q = s => el.querySelector(s);
@@ -214,11 +241,19 @@
     if (s) {
       const route = stays[s.id];
       who.innerHTML = `
-        <div class="who-name">${s.name}</div>
-        <div class="who-sub">${[s.subject, s.flagged ? 'score ' + s.score.toFixed(1) : 'not flagged'].filter(Boolean).join(', ')}</div>
-        <div>${s.flags.map(f => `<span class="chip ${App.sev(f)}">${f.rule}</span>`).join('')}</div>
+        <div class="who-name">${App.esc(s.name)}</div>
+        <div class="who-sub">${App.esc([s.subject, s.flagged ? 'score ' + s.score.toFixed(1) : 'not flagged'].filter(Boolean).join(', '))}</div>
+        <div>${s.flags.map(f => `<span class="chip ${App.sev(f)}">${App.esc(f.rule)}</span>`).join('')}</div>
         <ol class="route">${route.map(st => `<li class="${covers(st, t) ? 'now' : st.end <= t ? 'past' : ''}"><time>${App.fmt(st.start)}</time><span>${place(st.place)}</span></li>`).join('')}</ol>`;
     }
+
+    // suspects list: open a card without hunting for them on the map; shows where each one is now
+    const list = App.rankSuspects().slice();
+    if (state.revealMode && App.byId[data.kingpin]) list.unshift(App.byId[data.kingpin]);
+    q('#map-suspects').innerHTML = list.map(s => `<li><button data-id="${App.esc(s.id)}" class="${state.selectedStudent === s.id ? 'on' : ''}">
+        <i style="background:${state.revealMode && s.isKingpin ? 'var(--gold)' : colour(s)}"></i>
+        <span>${App.esc(s.name)}<small>${placeOf[s.id] ? place(placeOf[s.id]) : 'not on campus now'}</small></span>
+        <b>${s.isKingpin ? 'mastermind' : s.score.toFixed(1)}</b></button></li>`).join('') || '<li class="empty">No one has a suspicion score yet.</li>';
   }
 
   function setPlaying(on) {
@@ -278,6 +313,7 @@
               <div class="stat"><div class="stat-n alert" id="st-alerts">0</div><div class="stat-l">alerts now</div></div>
               <div class="stat wide" id="st-kp" hidden><div class="stat-n gold"></div><div class="stat-l"></div></div>
             </div>
+            <div class="panel"><h3>Suspects</h3><ul class="suspects" id="map-suspects"></ul></div>
             <div class="panel"><h3>Right now</h3><ul class="feed" id="map-feed"></ul></div>
             <div class="panel" id="map-who" hidden></div>
             <div class="panel opts">
@@ -308,6 +344,7 @@
       range.oninput = () => App.setState({ currentTime: +range.value });
       el.querySelector('#map-play').onclick = () => setPlaying(!timer);
       el.querySelector('#map-speed').onchange = e => (speed = +e.target.value);
+      el.querySelector('#map-suspects').onclick = e => { const id = e.target.closest('button')?.dataset.id; if (id) App.selectStudent(id); };
       el.querySelector('#opt-names').onchange = e => svg.classed('show-names', e.target.checked);
       el.querySelector('#opt-claims').onchange = e => { showClaims = e.target.checked; render(App.state); };
       el.querySelectorAll('.moment').forEach(b => (b.onclick = () => {

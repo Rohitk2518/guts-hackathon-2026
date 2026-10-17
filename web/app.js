@@ -48,6 +48,20 @@
     shortText(f) {
       return f.students.length > 4 ? f.text.replace(/^[^.]*? and [^.]*? were all in/, `${f.students.length} students were all in`) : f.text;
     },
+    /* colour for a suspicion score; map, card lists and network all use these bands */
+    scoreColor: s => (s.score >= 7 ? 'var(--alert)' : s.score >= 4 ? 'var(--warn)' : s.score > 0 ? 'var(--low)' : 'var(--clean)'),
+    /* students with a score, highest first; ties by flags, then links to flagged students.
+     * The mastermind is left out so the reveal stays a surprise. */
+    rankSuspects() {
+      if (App._ranked) return App._ranked;
+      const flagged = new Set(App.data.students.filter(s => s.flagged).map(s => s.id)), links = {};
+      App.data.edges.forEach(e => {
+        if (flagged.has(e.b)) links[e.a] = (links[e.a] || 0) + 1;
+        if (flagged.has(e.a)) links[e.b] = (links[e.b] || 0) + 1;
+      });
+      return (App._ranked = App.data.students.filter(s => s.score > 0 && !s.isKingpin)
+        .sort((a, b) => b.score - a.score || b.flags.length - a.flags.length || (links[b.id] || 0) - (links[a.id] || 0)));
+    },
     /* display name for a place id; claims can have no place at all */
     placeName: id => id == null ? 'No place given' : App.esc((App.placeById[id] || {}).name || id),
     /* escape data before putting it into innerHTML */
