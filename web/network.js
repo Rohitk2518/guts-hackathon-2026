@@ -18,9 +18,13 @@
     W = node.clientWidth || 900; H = node.clientHeight || 640;
     svg = d3.select(node);
 
-    const nodes = data.students.map(s => ({ id: s.id, s, r: 9 + degree(s.id) * 6 }));
+    const nodes = data.students.map(s => ({ id: s.id, s, r: 6 + Math.sqrt(degree(s.id)) * 3 }));
     const idx = Object.fromEntries(nodes.map(n => [n.id, n]));
-    const links = data.edges.map(e => ({ source: idx[e.a], target: idx[e.b], e }));
+    // ponytail: thousands of co-presence edges is a hairball; keep the strongest plus every mastermind link
+    const MAX_LINKS = 300, kp = data.kingpin;
+    const strong = data.edges.slice().sort((a, b) => b.weight - a.weight).slice(0, MAX_LINKS);
+    const shown = [...new Set([...strong, ...data.edges.filter(e => e.a === kp || e.b === kp)])];
+    const links = shown.map(e => ({ source: idx[e.a], target: idx[e.b], e }));
 
     linkSel = svg.append('g').selectAll('line').data(links).join('line')
       .attr('class', 'link').attr('stroke-width', d => 1 + d.e.weight * 6).attr('opacity', .7);

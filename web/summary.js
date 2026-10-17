@@ -8,7 +8,7 @@
       const flagged = data.students.filter(s => s.flagged).length;
       const swipes = data.students.reduce((n, s) => n + s.stays.length, 0);
       const top = data.findings.slice().sort((a, b) => a.rank - b.rank).slice(0, 3);
-      const place = id => esc((App.placeById[id] || {}).name || id);
+      const place = App.placeName;
 
       el.innerHTML = `
         <section class="brief">
@@ -23,7 +23,7 @@
           <ol class="findings">
             ${top.map(f => `
               <li class="finding" tabindex="0" data-t="${f.time_start}">
-                <span class="text">${esc(f.text)}</span>
+                <span class="text">${esc(App.shortText(f))}</span>
                 <span class="when">${App.fmt(f.time_start)} to ${App.fmt(f.time_end)}, ${place(f.place)}</span>
               </li>`).join('')}
           </ol>

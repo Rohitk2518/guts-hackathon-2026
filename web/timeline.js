@@ -53,11 +53,13 @@
       // stays
       s.stays.forEach(st => {
         const pl = App.placeById[st.place] || { name: st.place };
-        lane.append('rect')
-          .attr('x', x(st.start)).attr('y', 4)
-          .attr('width', Math.max(3, x(st.end) - x(st.start))).attr('height', LANE - 11).attr('rx', 3)
+        // a stay past midnight (end > 1440) draws as an evening bar plus an early-morning bar
+        const parts = st.end > 1440 ? [[st.start, 1440], [0, st.end - 1440]] : [[st.start, st.end]];
+        parts.forEach(([a, b]) => lane.append('rect')
+          .attr('x', x(a)).attr('y', 4)
+          .attr('width', Math.max(3, x(b) - x(a))).attr('height', LANE - 11).attr('rx', 3)
           .attr('fill', pl.isOutdoor ? 'var(--outdoor)' : 'var(--indoor)').attr('opacity', .9)
-          .append('title').text(`${pl.name}: ${App.fmt(st.start)} to ${App.fmt(st.end)}`);
+          .append('title').text(`${pl.name}: ${App.fmt(st.start)} to ${App.fmt(st.end)}`));
       });
 
       // flags (outline + marker)

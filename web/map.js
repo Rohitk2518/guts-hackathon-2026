@@ -15,15 +15,17 @@
   const PAD = 110, ZOOM = 2.2;
   const WALK_MAX = 30;   // ponytail: gaps longer than this hide the person (left campus); tune if real data looks sparse
   // label side per building where the default (below) collides; tune by eye
-  const LABEL = { boyd_orr: 'left', sir_alwyn: 'above', adam_smith: 'above', hive: 'above', kelvin: 'right', guu: 'right', kelvingrove: 'far' };
+  const LABEL = { boyd_orr_building: 'left', sir_alwyn_williams_building: 'above', adam_smith_building: 'above', the_hive: 'above', kelvin_building: 'right', glasgow_university_union: 'right', kelvingrove_park: 'far' };
   const LABEL_AT = { far: [-54, 5, 'end'], below: [0, 32, 'middle'], above: [0, -36, 'middle'], left: [-20, 5, 'end'], right: [20, 5, 'start'] };
   // person glyph: head + shoulders, centred on (0,0), about 22 units tall
-  const PERSON = 'M0,-11a4.6,4.6 0 1 1 0,9.2a4.6,4.6 0 1 1 0,-9.2zM-7.5,11c0,-6 3,-9.2 7.5,-9.2s7.5,3.2 7.5,9.2z';
+  // puppet: body (suspicion colour), face, hair cap (the student's own hair colour); about 22 units tall
+  const BODY = 'M-7.5,11c0,-6 3,-9.2 7.5,-9.2s7.5,3.2 7.5,9.2z';
+  const HAIR = 'M-5,-6.2a5,5 0 0 1 10,0q-2,-1.6 -5,-1.4q-3,.2 -5,1.4z';
 
   let svg, data, pos = {}, stays = {}, timer = null, highlightIds = null, base, el, opts = {};
   let showClaims = true, speed = 2, activeMoment = null;
 
-  const place = id => (App.placeById[id] || {}).name || id;
+  const place = App.placeName;
   const colour = s => !s.flagged ? 'var(--clean)' : s.score >= 7 ? 'var(--alert)' : s.score >= 4 ? 'var(--warn)' : 'var(--low)';
 
   // lat/lng -> pixel on campus.jpg (Web Mercator, same as the tiles)
@@ -81,12 +83,6 @@
       .attr('class', b => 'bld' + (b.isOutdoor ? ' outdoor' : ''))
       .attr('transform', b => `translate(${pos[b.id]})`);
     bg.append('rect').attr('x', -11).attr('y', -11).attr('width', 22).attr('height', 22).attr('rx', 5);
-    const lbl = bg.append('g').each(function (b) {
-      const [x, y, anchor] = LABEL_AT[LABEL[b.id] || 'below'];
-      d3.select(this).attr('transform', `translate(${x},${y})`).attr('text-anchor', anchor);
-    });
-    lbl.append('text').attr('class', 'bld-name').text(b => b.name);
-    lbl.append('text').attr('class', 'bld-hours').attr('y', 17).text(hours);
     bg.append('title').text(b => b.name + ': ' + hours(b));
 
     svg.append('g').attr('class', 'trail-layer');
@@ -98,13 +94,27 @@
       .on('click', (ev, s) => App.selectStudent(s.id))
       .on('keydown', (ev, s) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); App.selectStudent(s.id); } })
       .each(function (s) {
-        const g = d3.select(this), k = s.flagged ? 1.6 : 1.15;
+        const g = d3.select(this), k = s.flagged ? 1.6 : .95;
         g.append('circle').attr('class', 'hit').attr('r', 22);
         if (s.flagged) g.append('circle').attr('class', 'ring pulse').attr('r', 19).attr('stroke', colour(s));
-        g.append('path').attr('class', 'person').attr('d', PERSON).attr('transform', `scale(${k})`);
+        const p = g.append('g').attr('transform', `scale(${k})`);
+        p.append('path').attr('class', 'person').attr('d', BODY);
+        p.append('circle').attr('class', 'face').attr('cy', -6.4).attr('r', 4.6);
+        p.append('path').attr('class', 'hair').attr('d', HAIR).attr('fill', /^#[0-9a-f]{3,8}$/i.test(s.hair) ? s.hair : '#3d2b1f');
         g.append('text').attr('class', 'mk-name').attr('y', 34).text(s.name.split(' ')[0]);
         g.append('title').text(s.name + (s.flagged ? ', score ' + s.score.toFixed(1) : ''));
       });
+
+    // labels last so crowds never cover them; class bld so open/closed styling still applies
+    svg.append('g').attr('class', 'labels').selectAll('g').data(data.buildings).join('g')
+      .attr('class', 'bld bld-label')
+      .attr('transform', b => {
+        const [x, y, anchor] = LABEL_AT[LABEL[b.id] || 'below'];
+        return `translate(${pos[b.id][0] + x},${pos[b.id][1] + y})`;
+      })
+      .attr('text-anchor', b => LABEL_AT[LABEL[b.id] || 'below'][2])
+      .call(g => g.append('text').attr('class', 'bld-name').text(b => b.name))
+      .call(g => g.append('text').attr('class', 'bld-hours').attr('y', 17).text(hours));
   }
 
   function render(state) {
@@ -116,11 +126,11 @@
     const slot = {}, at = {}, xy = {};   // slot spreads people sharing a building; at = place -> students
     svg.selectAll('.mk').each(function (s) {
       const w = where(s, t), g = d3.select(this);
-      if (!w) return g.attr('display', 'none');
+      if (!w || !pos[w.place || w.from] || (w.to && !pos[w.to])) return g.attr('display', 'none');   // off campus
       let x, y;
       if (w.place) {
         const i = slot[w.place] = (slot[w.place] ?? -1) + 1;
-        const a = i * 2.4, r = 24 + 7 * Math.sqrt(i);
+        const a = i * 2.4, r = 22 + 6 * Math.sqrt(i);
         [x, y] = pos[w.place] || [0, 0];
         x += r * Math.cos(a); y += r * Math.sin(a);
         (at[w.place] = at[w.place] || []).push(s);
@@ -237,7 +247,7 @@
       const controls = o.controls !== false;
       // one chip per time + place; findings that share both merge their students
       const byKey = {};
-      data.findings.forEach(f => {
+      data.findings.filter(f => f.time_start != null).forEach(f => {
         const k = f.time_start + '|' + f.place;
         if (byKey[k]) byKey[k].students = [...new Set([...byKey[k].students, ...f.students])];
         else byKey[k] = { ...f, students: [...f.students] };
@@ -306,7 +316,7 @@
         setPlaying(false);
         this.focus(f ? f.place : null);
         highlightIds = f ? f.students : null;
-        App.setState(f ? { currentTime: f.time_start } : {});
+        App.setState(f ? { currentTime: this.busiest(f.students, f.time_start, f.time_end) } : {});
       }));
       this._range = range;
       setPlaying(false);
@@ -324,6 +334,14 @@
       svg.transition().duration(900).attr('viewBox', vb.join(' '));
     },
     highlight(ids) { highlightIds = ids; render(App.state); },
+    // minute in [start, end] when most of ids are on campus; findings give the window's first minute
+    busiest(ids, start, end) {
+      if (end == null || ids.length < 2) return start;
+      const len = (end - start + 1440) % 1440, here = t => ids.filter(id => App.byId[id] && where(App.byId[id], t)).length;
+      let best = start;
+      for (let m = 0; m <= len; m += 5) { const t = (start + m) % 1440; if (here(t) > here(best)) best = t; }
+      return best;
+    },
 
     _test: { isOpen, where, merc, covers }
   };

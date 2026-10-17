@@ -8,7 +8,7 @@
   let el, data, steps, timer = null, narrate = false, onKey;
 
   const esc = App.esc;
-  const place = id => esc((App.placeById[id] || {}).name || id);
+  const place = App.placeName;
   const first = n => esc(n.split(' ')[0]);
 
   // final step: the kingpin's strongest link to a flagged student sets the time and place
@@ -39,7 +39,7 @@
     i = Math.max(0, Math.min(steps.length - 1, i));
     const f = steps[i], last = i === steps.length - 1;
     App.setState({ storyStep: i });
-    glideTo(f.time_start);
+    glideTo(f.reveal ? f.time_start : Views.map.busiest(f.students, f.time_start, f.time_end));
     Views.map.focus(f.place);
     Views.map.highlight(f.students);
 
@@ -55,9 +55,12 @@
              <p>They broke no rules. Their testimony checks out. But look who they were with.</p>
              <button class="btn gold" id="story-reveal">Reveal the mastermind</button>`}` : `
         <div class="story-when">${App.fmt(f.time_start)} to ${App.fmt(f.time_end)}, ${place(f.place)}</div>
-        <p class="story-finding">${esc(f.text)}</p>`;
-    el.querySelector('#story-who').innerHTML = (f.reveal && !kpShown ? [] : who).map(s =>
-      `<button class="who-chip ${s.isKingpin && kpShown ? 'gold' : s.flagged ? 'flagged' : ''}" data-id="${esc(s.id)}">${first(s.name)}</button>`).join('');
+        <p class="story-finding${App.shortText(f).length > 160 ? ' long' : ''}">${esc(App.shortText(f))}</p>`;
+    // flagged and mastermind first; cap the chips so a 19-person finding stays readable
+    const shown = (f.reveal && !kpShown ? [] : who).sort((a, b) => (b.isKingpin && kpShown) - (a.isKingpin && kpShown) || b.flagged - a.flagged);
+    el.querySelector('#story-who').innerHTML = shown.slice(0, 8).map(s =>
+      `<button class="who-chip ${s.isKingpin && kpShown ? 'gold' : s.flagged ? 'flagged' : ''}" data-id="${esc(s.id)}">${first(s.name)}</button>`).join('') +
+      (shown.length > 8 ? `<span class="muted">and ${shown.length - 8} more</span>` : '');
 
     el.querySelectorAll('.story-dot').forEach((d, j) => d.classList.toggle('on', j === i));
     el.querySelector('#story-prev').disabled = i === 0;
@@ -66,7 +69,7 @@
 
     const rv = el.querySelector('#story-reveal');
     if (rv) rv.onclick = () => { App.setState({ revealMode: true }); show(i); };
-    if (narrate && Views.speech) Views.speech.say(f.reveal ? (kpShown ? `The mastermind is ${f.kp.name}.` : 'One person keeps turning up.') : f.text);
+    if (narrate && Views.speech) Views.speech.say(f.reveal ? (kpShown ? `The mastermind is ${f.kp.name}.` : 'One person keeps turning up.') : App.shortText(f));
     if (last) setAuto(false);
   }
 
@@ -81,7 +84,8 @@
   window.Views.story = {
     mount(container, d) {
       el = container; data = d;
-      steps = data.findings.slice().sort((a, b) => a.rank - b.rank);
+      // untimed findings (the network one) are covered by the reveal step
+      steps = data.findings.filter(f => f.time_start != null).sort((a, b) => a.rank - b.rank);
       const r = revealStep();
       if (r) steps.push(r);
 

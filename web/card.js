@@ -6,8 +6,8 @@
 (function () {
   const esc = App.esc;
   const overlaps = (a, b) => a.start < b.end && b.start < a.end;
-  const place = id => esc((App.placeById[id] || {}).name || id);
-  const span = x => `${App.fmt(x.start)} to ${App.fmt(x.end)}`;
+  const place = App.placeName;
+  const span = x => x.start == null ? 'Time not given' : `${x.approx ? 'about ' : ''}${App.fmt(x.start)} to ${App.fmt(x.end)}`;
 
   // a claim is contradicted when logs at that place cover under half its time;
   // a stay is unmentioned when no claim covers it
@@ -30,6 +30,7 @@
 
   window.Views = window.Views || {};
   window.Views.card = {
+    compare,   // trace.js reuses the claim-vs-log check
     open(id) {
       const s = App.byId[id];
       if (!s) return;
@@ -69,7 +70,10 @@
 
         ${s.flags.length ? `<section class="icard-flags"><h3>Why they were flagged</h3><ul>${s.flags.map(f => `<li><span class="chip ${sev(f)}">${esc(f.rule)}</span>${esc(f.detail || '')}</li>`).join('')}</ul></section>` : ''}
         ${s.llm_reasoning ? `<section class="icard-ai"><h3>Analysis</h3><p>${esc(s.llm_reasoning)}</p></section>` : ''}
-        <footer class="icard-foot"><button class="btn" data-act="map">Show on the map</button></footer></div>`;
+        <footer class="icard-foot">
+          <button class="btn secondary" data-act="map">Show on the map</button>
+          <button class="btn" data-act="trace">Trace their day</button>
+        </footer></div>`;
 
       // first contradiction: an unbacked claim, else an unmentioned stay, else a timed flag
       const first = claims.find(c => c.bad) || stays.find(st => st.bad) || s.flags.find(f => f.start != null);
@@ -82,6 +86,7 @@
         const act = e.target.closest('[data-act]')?.dataset.act;
         if (e.target === d || act === 'close') d.close();   // backdrop click or the x
         if (act === 'map') goMap();
+        if (act === 'trace') { d.close(); App.setState({ mode: 'trace', selectedStudent: s.id }); }
         if (act === 'speak') Views.speech.speak(s);
       };
 

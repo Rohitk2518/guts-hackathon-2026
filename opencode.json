@@ -4,30 +4,21 @@
     "nvidia": {
       "name": "NVIDIA NIM",
       "npm": "@ai-sdk/openai-compatible",
-      "env": [
-        "NVIDIA_API_KEY"
-      ],
       "options": {
         "baseURL": "https://integrate.api.nvidia.com/v1"
       },
       "models": {
-        "nvidia/llama-3.1-nemotron-70b-instruct": {
-          "name": "Llama 3.1 Nemotron 70B Instruct"
+        "nvidia/nemotron-3.5-super-vl-120b-a12b": {
+          "name": "Nemotron 3.5 Super VL 120B"
         },
-        "nvidia/nemotron-4-340b-instruct": {
-          "name": "Nemotron 4 340B Instruct"
+        "nvidia/nemotron-3-super-120b-a12b": {
+          "name": "Nemotron 3 Super 120B"
         },
-        "nvidia/nemotron-3-ultra-550b-a55b": {
-          "name": "Nemotron 3 Ultra 550B"
-        },
-        "nvidia/nemotron-3.5-lightning-30b-a3b": {
-          "name": "Nemotron 3.5 Lightning"
-        },
-        "nvidia/llama-3.1-nemotron-51b-instruct": {
-          "name": "Nemotron 51B Instruct"
+        "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning": {
+          "name": "Nemotron 3 Nano Omni Reasoning"
         }
       }
     }
   },
-  "model": "nvidia/nvidia/llama-3.1-nemotron-70b-instruct"
+  "model": "nvidia/nvidia/nemotron-3.5-super-vl-120b-a12b"
 }
