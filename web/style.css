@@ -23,8 +23,8 @@
   --clean: #737d8e;
   --gold: #f4c24f;
   --accent: #5b8ef0;
-  --outdoor: #5aa765;
-  --indoor: #5b8ef0;
+  --stay: #3f8f5a;
+  --claim: #2783a8;
   --night: #0b0e14;
   --map-night: #000;
   --map-filter: invert(1) hue-rotate(180deg) grayscale(1) brightness(.78) contrast(.92);
