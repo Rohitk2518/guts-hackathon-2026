@@ -294,13 +294,18 @@
         <ol class="route">${route.map(st => `<li class="${covers(st, t) ? 'now' : st.end <= t ? 'past' : ''}"><time>${App.fmt(st.start)}</time><span>${place(st.place)}</span></li>`).join('')}</ol>`;
     }
 
-    // suspects list: open a card without hunting for them on the map; shows where each one is now
-    const list = App.rankSuspects().slice();
-    if (state.revealMode && App.byId[data.kingpin]) list.unshift(App.byId[data.kingpin]);
-    q('#map-suspects').innerHTML = list.map(s => `<li><button data-id="${App.esc(s.id)}" class="${state.selectedStudent === s.id ? 'on' : ''}">
+    // two lists, so a card opens without hunting on the map; each shows where the person is now.
+    // The brief's rule: the kingpin met every conspirator, so conspirators = flagged students the kingpin met;
+    // everyone else with a flag is another irregularity in the data.
+    const kc = App.kingpinCase(), conspirators = kc ? kc.contacts.map(x => x.s) : [];
+    const others = App.rankSuspects().filter(s => !conspirators.includes(s));
+    if (state.revealMode && kc) conspirators.unshift(kc.kp);
+    const items = list => list.map(s => `<li><button data-id="${App.esc(s.id)}" class="${state.selectedStudent === s.id ? 'on' : ''}">
         ${App.avatar(s, 30)}
         <span>${App.esc(s.name)}<small>${placeOf[s.id] ? place(placeOf[s.id]) : 'not on campus now'}</small></span>
-        <b>${s.isKingpin ? 'kingpin' : s.score.toFixed(1)}</b></button></li>`).join('') || '<li class="empty">No one has a suspicion score yet.</li>';
+        <b>${s.isKingpin ? 'kingpin' : s.score.toFixed(1)}</b></button></li>`).join('');
+    q('#map-suspects').innerHTML = items(conspirators) || '<li class="empty">No flagged student met the kingpin.</li>';
+    q('#map-others').innerHTML = items(others) || '<li class="empty">Nothing else stands out.</li>';
   }
 
   function setPlaying(on) {
@@ -360,7 +365,8 @@
               <div class="stat"><div class="stat-n alert" id="st-alerts">0</div><div class="stat-l">alerts now</div></div>
               <div class="stat wide" id="st-kp" hidden><div class="stat-n gold"></div><div class="stat-l"></div></div>
             </div>
-            <div class="panel"><h3>Likely conspirators</h3><ul class="suspects" id="map-suspects"></ul></div>
+            <div class="panel"><h3>Likely conspirators</h3><p class="list-note">Flagged, and all met the same clean-looking student</p><ul class="suspects" id="map-suspects"></ul></div>
+            <div class="panel"><h3>Other irregularities</h3><p class="list-note">Flagged, but never with the kingpin</p><ul class="suspects" id="map-others"></ul></div>
             <div class="panel"><h3>Right now</h3><ul class="feed" id="map-feed"></ul></div>
             <div class="panel" id="map-who" hidden></div>
             <div class="panel opts">
@@ -400,7 +406,7 @@
       range.oninput = () => App.setState({ currentTime: +range.value });
       el.querySelector('#map-play').onclick = () => setPlaying(!timer);
       el.querySelector('#map-speed').onchange = e => (speed = +e.target.value);
-      el.querySelector('#map-suspects').onclick = e => { const id = e.target.closest('button')?.dataset.id; if (id) App.selectStudent(id); };
+      el.querySelector('#map-suspects').onclick = el.querySelector('#map-others').onclick = e => { const id = e.target.closest('button')?.dataset.id; if (id) App.selectStudent(id); };
       el.querySelector('#opt-names').onchange = e => svg.classed('show-names', e.target.checked);
       el.querySelector('#opt-claims').onchange = e => { showClaims = e.target.checked; render(App.state); };
       el.querySelectorAll('.moment').forEach(b => (b.onclick = () => {

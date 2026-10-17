@@ -25,6 +25,8 @@
   --accent: #5b8ef0;
   --stay: #3f8f5a;
   --claim: #2783a8;
+  --indoor: #5b8ef0;   /* map: open building */
+  --outdoor: #5aa765;  /* map: park */
   --night: #0b0e14;
   --map-night: #000;
   --map-filter: invert(1) hue-rotate(180deg) grayscale(1) brightness(.78) contrast(.92);
@@ -47,6 +49,8 @@
   --accent: #1f5fd1;
   --stay: #4f8a3c;
   --claim: #1f5fd1;
+  --indoor: #1f5fd1;
+  --outdoor: #4f8a3c;
   --night: #e4e8ef;
   --map-night: #0f1b33;
   --map-filter: grayscale(.9) contrast(.92) brightness(1.04);
@@ -429,11 +433,7 @@ button, select, input { font: inherit; color: inherit; }
 .sus-actions { display: flex; gap: 8px; }
 .sus-actions .btn { padding: 6px 12px; font-size: 13px; }
 @media (max-width: 800px) { .suspect-list li { grid-template-columns: 2em 1fr auto; } .sus-actions { grid-column: 2 / -1; } }
-/* other irregularities: not a ranking, so no numbers */
-.suspect-list.others li { grid-template-columns: 1fr auto auto; }
-.suspect-list.others li::before { content: none; }
-@media (max-width: 800px) { .suspect-list.others li { grid-template-columns: 1fr auto; } .suspect-list.others .sus-actions { grid-column: 1 / -1; } }
-.list-note { margin: 0 0 10px; font-size: 13px; color: var(--muted); }
+.list-note { margin: -4px 0 8px; font-size: 12px; color: var(--muted); }
 
 /* crowd badge on the map: "+N" more people at this building */
 .badge { cursor: pointer; }

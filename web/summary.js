@@ -11,10 +11,7 @@
       const place = App.placeName;
       // after the reveal the brief states the conclusion, with the same numbers as the story reveal
       const kc = App.kingpinCase(), kp = kc && kc.kp;
-      // the brief's rule: the kingpin met every conspirator, so conspirators = flagged students the kingpin met.
-      // Everyone else with a flag is still worth a look, as another irregularity in the data.
-      const conspirators = kc ? kc.contacts.map(x => x.s) : [];
-      const others = App.rankSuspects().filter(s => !conspirators.includes(s));
+      const suspects = App.rankSuspects().slice(0, 3);
       const row = s => `
               <li>
                 <div class="sus-who">${App.avatar(s, 44)}<div><b class="sus-name">${esc(s.name)}</b>
@@ -38,13 +35,8 @@
               : `One person, the kingpin, organised it, and on paper they look clean. Their name is <span class="redacted" aria-label="hidden">Name withheld</span>.`}
           </p>
 
-          ${conspirators.length ? `<h2>Likely conspirators</h2>
-          <p class="list-note">Flagged students who all spent time with the same clean-looking student.</p>
-          <ol class="suspect-list">${conspirators.map(row).join('')}</ol>` : ''}
-
-          ${others.length ? `<h2>Other irregularities</h2>
-          <p class="list-note">Flagged, but never with ${kp && App.state.revealMode ? esc(kp.name.split(' ')[0]) : 'the kingpin'}. Strange data worth a look.</p>
-          <ul class="suspect-list others">${others.map(row).join('')}</ul>` : ''}
+          ${suspects.length ? `<h2>Likely conspirators</h2>
+          <ol class="suspect-list">${suspects.map(row).join('')}</ol>` : ''}
 
           <h2>What stands out</h2>
           <ol class="findings">
