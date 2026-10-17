@@ -1,6 +1,6 @@
 {
   "meta": {
-    "generated": "2026-10-18T00:13:47.287654",
+    "generated": "2026-10-18T00:38:33.491661",
     "version": 1,
     "case": "Boyd Orr Burndown"
   },
@@ -324,8 +324,8 @@
       "height": 171,
       "hair": "#cce88b",
       "societies": [
-        "Back to Yoga Society",
-        "Volleyball Society"
+        "Volleyball Society",
+        "Back to Yoga Society"
       ],
       "score": 7.0,
       "flagged": true,
@@ -5571,9 +5571,9 @@
       "height": 180,
       "hair": "#adf931",
       "societies": [
+        "Volleyball Society",
         "Glasgow Latin America Society",
-        "Motorcycling Society",
-        "Volleyball Society"
+        "Motorcycling Society"
       ],
       "score": 0,
       "flagged": false,
@@ -8158,9 +8158,9 @@
       "height": 173,
       "hair": "#c62edd",
       "societies": [
-        "Bad Movie Society",
         "Juggling Society",
-        "Minecraft Society"
+        "Minecraft Society",
+        "Bad Movie Society"
       ],
       "score": 0,
       "flagged": false,
@@ -43173,7 +43173,7 @@
     },
     {
       "rank": 17,
-      "text": "Elliott Jones has a spotless record — but is the only student with co-presence links to all flagged suspects (weighted degree: 105.96). Network analysis identifies them as the likely mastermind.",
+      "text": "Elliott Jones has a spotless record, but shared building time with 5 of the 13 flagged students. Network analysis ranks them as the likely mastermind.",
       "time_start": null,
       "time_end": null,
       "place": null,

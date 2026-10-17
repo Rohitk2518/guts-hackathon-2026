@@ -6,7 +6,7 @@
   let sim, svg, layer, zoom, avSel, nodeSel, linkSel, labelSel, ringSel, el, data, W, H, focusKey = null;
 
   // suspicion band from the score; the legend uses the same bands
-  const band = s => (s.score >= 7 ? 'high' : s.score >= 4 ? 'med' : s.score > 0 ? 'low' : 'clean');
+  const band = s => (s.score >= 7 ? 'high' : s.score >= 3 ? 'med' : s.score > 0 ? 'low' : 'clean');
   const COLOR = { high: 'var(--alert)', med: 'var(--warn)', low: 'var(--low)', clean: 'var(--clean)' };
   const nodeColor = s => COLOR[band(s)];
   const GROUPS = [['high', 'High score'], ['med', 'Medium'], ['low', 'Low'], ['clean', 'Clean'], ['kp', 'Kingpin']];

@@ -221,14 +221,15 @@ def generate_findings(
     # ── Finding type 3: kingpin reveal ────────────────────────────────────────
     if kingpin_id:
         kname  = name_map.get(kingpin_id, kingpin_id)
-        degree = G.degree(kingpin_id, weight="weight") if G.has_node(kingpin_id) else 0
+        # state the real count: "all flagged suspects" stopped being true once the rules flagged more students
+        flagged = set(flags_df["student_id"]) if not flags_df.empty else set()
+        met = flagged & set(G.neighbors(kingpin_id)) if G.has_node(kingpin_id) else set()
         findings.append({
             "rank":       3,
             "text":       (
-                f"{kname} has a spotless record — but is the only student "
-                f"with co-presence links to all flagged suspects "
-                f"(weighted degree: {round(degree, 2)}). "
-                f"Network analysis identifies them as the likely mastermind."
+                f"{kname} has a spotless record, but shared building time with "
+                f"{len(met)} of the {len(flagged)} flagged students. "
+                f"Network analysis ranks them as the likely mastermind."
             ),
             "time_start": None,
             "time_end":   None,

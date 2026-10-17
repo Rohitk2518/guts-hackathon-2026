@@ -414,6 +414,11 @@ button, select, input { font: inherit; color: inherit; }
 .sus-actions { display: flex; gap: 8px; }
 .sus-actions .btn { padding: 6px 12px; font-size: 13px; }
 @media (max-width: 800px) { .suspect-list li { grid-template-columns: 2em 1fr auto; } .sus-actions { grid-column: 2 / -1; } }
+/* other irregularities: not a ranking, so no numbers */
+.suspect-list.others li { grid-template-columns: 1fr auto auto; }
+.suspect-list.others li::before { content: none; }
+@media (max-width: 800px) { .suspect-list.others li { grid-template-columns: 1fr auto; } .suspect-list.others .sus-actions { grid-column: 1 / -1; } }
+.list-note { margin: 0 0 10px; font-size: 13px; color: var(--muted); }
 
 /* crowd badge on the map: "+N" more people at this building */
 .badge { cursor: pointer; }
