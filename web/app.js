@@ -1,0 +1,117 @@
+/* app.js: shared state + screen router (Danielle)
+ *
+ * Contract for views (Som's modules follow the same one):
+ *   window.Views.<mode> = { mount(el, data), update(state, patch), unmount() }
+ *   - mount():  build the screen inside el
+ *   - update(): called on every setState while this view is active
+ *   - unmount(): optional cleanup
+ *
+ * Extra hooks:
+ *   window.Views.card = { open(studentId) }   -> Som's interrogation card
+ *   App.selectStudent(id) sets state and calls Views.card.open if present.
+ */
+(function () {
+  const state = {
+    currentTime: null,      // minutes after midnight: drives clock + map
+    selectedStudent: null,  // student ID: drives card + highlights
+    mode: 'summary',        // 'summary' | 'timeline' | 'network' | 'map' | 'story' | 'evidence'
+    storyStep: 0,           // index into findings[]
+    revealMode: false       // true = show kingpin links + fade clean students
+  };
+
+  const listeners = [];
+  window.Views = window.Views || {};
+
+  const TABS = [
+    { mode: 'summary',  label: 'Summary' },
+    { mode: 'timeline', label: 'Timeline' },
+    { mode: 'network',  label: 'Network' },
+    { mode: 'map',      label: 'Map' },
+    { mode: 'story',    label: '▶ Story' }
+  ];
+
+  const App = {
+    state,
+    data: null,
+    byId: {},
+    placeById: {},
+    current: null,
+
+    /* minutes -> "HH:MM" */
+    fmt(min) {
+      if (min == null) return '--:--';
+      const m = ((Math.round(min) % 1440) + 1440) % 1440;
+      return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
+    },
+    isNight(min) { return min < 360 || min >= 1260; },
+
+    subscribe(fn) { listeners.push(fn); },
+
+    setState(patch) {
+      const modeChanged = patch.mode && patch.mode !== state.mode;
+      Object.assign(state, patch);
+      if (modeChanged) App.route();
+      listeners.forEach(fn => fn(state, patch));
+      if (!modeChanged && App.current && App.current.update) App.current.update(state, patch);
+      App.renderChrome();
+    },
+
+    selectStudent(id) {
+      App.setState({ selectedStudent: id });
+      if (Views.card && Views.card.open && id) Views.card.open(id);
+    },
+
+    renderChrome() {
+      document.getElementById('clock-time').textContent = App.fmt(state.currentTime);
+      document.getElementById('clock-icon').textContent =
+        state.currentTime != null && App.isNight(state.currentTime) ? '🌙' : '☀';
+      document.querySelectorAll('.tab').forEach(t =>
+        t.classList.toggle('active', t.dataset.mode === state.mode));
+    },
+
+    route() {
+      const el = document.getElementById('view');
+      if (App.current && App.current.unmount) App.current.unmount();
+      el.innerHTML = '';
+      const view = Views[state.mode];
+      App.current = view || null;
+      if (view) {
+        view.mount(el, App.data);
+        if (view.update) view.update(state, {});
+      } else {
+        el.innerHTML = '<div class="placeholder"><h2>' + state.mode +
+          '</h2><p>This screen is built by Som. It will appear when <code>' +
+          state.mode + '.js</code> registers <code>Views.' + state.mode + '</code>.</p></div>';
+      }
+    },
+
+    async boot() {
+      try {
+        const res = await fetch('data.json');
+        App.data = await res.json();
+      } catch (e) {
+        document.getElementById('view').innerHTML =
+          '<div class="placeholder"><h2>Could not load data.json</h2>' +
+          '<p>Open via a web server, not file://. Run <code>python -m http.server</code> in <code>web/</code>.</p></div>';
+        return;
+      }
+      App.data.students.forEach(s => (App.byId[s.id] = s));
+      App.data.buildings.forEach(b => (App.placeById[b.id] = b));
+      document.getElementById('mock-badge').hidden = !(App.data.meta && App.data.meta.mock);
+
+      const tabs = document.getElementById('tabs');
+      TABS.forEach(t => {
+        const b = document.createElement('button');
+        b.className = 'tab'; b.dataset.mode = t.mode; b.textContent = t.label;
+        b.onclick = () => App.setState({ mode: t.mode });
+        tabs.appendChild(b);
+      });
+
+      state.currentTime = 480;
+      App.route();
+      App.renderChrome();
+    }
+  };
+
+  window.App = App;
+})();

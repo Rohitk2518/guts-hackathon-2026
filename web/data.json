@@ -1,0 +1,158 @@
+{
+  "meta": { "generated": "2026-10-17T13:15:00+01:00", "version": 1, "mock": true },
+
+  "buildings": [
+    { "id": "boyd_orr", "name": "Boyd Orr", "lat": 55.8735737, "lng": -4.2926741, "opens": 480, "closes": 1260, "lectures": [{ "subject": "Computing Science", "start": 600, "end": 720 }], "isOutdoor": false },
+    { "id": "james_watt", "name": "James Watt", "lat": 55.8708995, "lng": -4.2872286, "opens": 540, "closes": 1020, "lectures": [{ "subject": "Engineering", "start": 600, "end": 780 }], "isOutdoor": false },
+    { "id": "adam_smith", "name": "Adam Smith", "lat": 55.8737694, "lng": -4.2900032, "opens": 540, "closes": 1020, "lectures": [{ "subject": "Business", "start": 600, "end": 660 }], "isOutdoor": false },
+    { "id": "main_building", "name": "Main Building", "lat": 55.871843, "lng": -4.288341, "opens": 540, "closes": 1020, "lectures": [{ "subject": "Philosophy", "start": 540, "end": 660 }, { "subject": "Veterinary Medicine", "start": 600, "end": 720 }, { "subject": "Mathematics", "start": 660, "end": 780 }], "isOutdoor": false },
+    { "id": "wolfson", "name": "Wolfson Medical", "lat": 55.8729374, "lng": -4.293249, "opens": 540, "closes": 1020, "lectures": [{ "subject": "Medicine", "start": 780, "end": 900 }], "isOutdoor": false },
+    { "id": "kelvingrove", "name": "Kelvingrove Park", "lat": 55.8695, "lng": -4.2890, "opens": 0, "closes": 1440, "lectures": [], "isOutdoor": true },
+    { "id": "qmu", "name": "Queen Margaret Union", "lat": 55.8745, "lng": -4.2905, "opens": 480, "closes": 1440, "lectures": [], "isOutdoor": false },
+    { "id": "library", "name": "Library", "lat": 55.8725, "lng": -4.2880, "opens": 480, "closes": 1440, "lectures": [], "isOutdoor": false }
+  ],
+
+  "students": [
+    {
+      "id": "2495155L", "name": "Mohamed Lloyd", "age": 22, "sex": "M", "year": 2, "subject": "Computing Science",
+      "height": 175, "hair": "#3d2b1f", "societies": ["Chess Society"],
+      "score": 8.7, "flagged": true, "isKingpin": false,
+      "flags": [
+        { "rule": "NIGHT", "severity": "high", "detail": "In Kelvingrove Park 03:38-07:16, no building open", "start": 218, "end": 436 },
+        { "rule": "TESTIMONY", "severity": "med", "detail": "Claims a quiet evening at home; logs place him in the park", "start": 218, "end": 436 }
+      ],
+      "stays": [{ "place": "kelvingrove", "start": 218, "end": 436 }, { "place": "boyd_orr", "start": 600, "end": 720 }, { "place": "library", "start": 780, "end": 1020 }],
+      "claims": [{ "place": "library", "start": 780, "end": 1020, "activity": "study", "society": null }],
+      "testimony": "MOCK: I was at home all night and went to my lecture first thing.",
+      "llm_reasoning": "MOCK: The claimed timeline omits a 3h38m stay in Kelvingrove Park overnight, which the log records."
+    },
+    {
+      "id": "2470551P", "name": "Melanie Patterson", "age": 21, "sex": "F", "year": 3, "subject": "Computing Science",
+      "height": 166, "hair": "#d14336", "societies": ["Italian Society"],
+      "score": 7.9, "flagged": true, "isKingpin": false,
+      "flags": [
+        { "rule": "NIGHT", "severity": "high", "detail": "In Kelvingrove Park 03:01-05:33", "start": 181, "end": 333 },
+        { "rule": "LECTURE", "severity": "med", "detail": "Boyd Orr lecture window 10:00-12:00 only partly attended", "start": 600, "end": 720 }
+      ],
+      "stays": [{ "place": "kelvingrove", "start": 181, "end": 333 }, { "place": "boyd_orr", "start": 600, "end": 630 }, { "place": "boyd_orr", "start": 810, "end": 870 }, { "place": "library", "start": 1140, "end": 1380 }],
+      "claims": [{ "place": "boyd_orr", "start": 600, "end": 720, "activity": "lecture", "society": null }],
+      "testimony": "MOCK: Out at an Italian Society event, then a lecture at the Boyd Orr, then the library.",
+      "llm_reasoning": "MOCK: Says she attended the full lecture; logs show about 30 minutes in Boyd Orr at lecture time."
+    },
+    {
+      "id": "2523112J", "name": "Beth Jones", "age": 23, "sex": "F", "year": 4, "subject": "Medicine",
+      "height": 168, "hair": "#aefcc1", "societies": ["Big Band Society"],
+      "score": 6.2, "flagged": true, "isKingpin": false,
+      "flags": [
+        { "rule": "TELEPORT", "severity": "med", "detail": "QMU to Kelvingrove Park in 3 minutes (0.4 km) at 22:00", "start": 1320, "end": 1323 },
+        { "rule": "NIGHT", "severity": "med", "detail": "In Kelvingrove Park 22:00-24:00 and beyond", "start": 1320, "end": 1440 }
+      ],
+      "stays": [{ "place": "wolfson", "start": 780, "end": 900 }, { "place": "kelvingrove", "start": 900, "end": 960 }, { "place": "qmu", "start": 1080, "end": 1320 }, { "place": "kelvingrove", "start": 1323, "end": 1440 }],
+      "claims": [{ "place": "kelvingrove", "start": 1320, "end": 1440, "activity": "social", "society": null }],
+      "testimony": "MOCK: Argument at the QMU, then sat on the swings with Olivia until 2am.",
+      "llm_reasoning": "MOCK: Timeline broadly matches the logs except for an implausibly fast move between the QMU and the park."
+    },
+    {
+      "id": "2795502Y", "name": "Shaun Yates", "age": 20, "sex": "M", "year": 2, "subject": "Chemistry",
+      "height": 180, "hair": "#cbe253", "societies": ["Minecraft Society"],
+      "score": 5.4, "flagged": true, "isKingpin": false,
+      "flags": [
+        { "rule": "NIGHT", "severity": "med", "detail": "In Kelvingrove Park 23:30 onward", "start": 1410, "end": 1440 },
+        { "rule": "OOH", "severity": "low", "detail": "In Boyd Orr until 15:40 for a tutorial outside the listed lecture times", "start": 720, "end": 940 }
+      ],
+      "stays": [{ "place": "boyd_orr", "start": 720, "end": 940 }, { "place": "kelvingrove", "start": 1410, "end": 1440 }],
+      "claims": [{ "place": "boyd_orr", "start": 720, "end": 940, "activity": "tutorial", "society": null }],
+      "testimony": "MOCK: Tutorial in Boyd Orr until twenty to four, then Minecraft all night.",
+      "llm_reasoning": "MOCK: Walk to the park at 23:30 is unmentioned in logs of any building."
+    },
+    {
+      "id": "2546112P", "name": "Eric Parkin", "age": 24, "sex": "M", "year": 4, "subject": "Pharmacy",
+      "height": 177, "hair": "#8aeaaa", "societies": ["Philosophy Society"],
+      "score": 3.1, "flagged": true, "isKingpin": false,
+      "flags": [{ "rule": "TESTIMONY", "severity": "low", "detail": "Says he sat alone in Kelvingrove; logs overlap with another student", "start": 440, "end": 523 }],
+      "stays": [{ "place": "kelvingrove", "start": 440, "end": 523 }, { "place": "qmu", "start": 720, "end": 780 }, { "place": "main_building", "start": 960, "end": 1020 }],
+      "claims": [{ "place": "kelvingrove", "start": 420, "end": 540, "activity": "reading", "society": null }],
+      "testimony": "MOCK: I sit on the benches alone and read.",
+      "llm_reasoning": "MOCK: The claim of being alone is contradicted by a 43-minute overlap with another student."
+    },
+    {
+      "id": "2527287T", "name": "Danny Thomas", "age": 23, "sex": "M", "year": 4, "subject": "Philosophy",
+      "height": 168, "hair": "#6ae8ce", "societies": ["Back to Yoga Society", "Big Band Society"],
+      "score": 1.2, "flagged": false, "isKingpin": false, "flags": [],
+      "stays": [{ "place": "main_building", "start": 540, "end": 660 }, { "place": "qmu", "start": 675, "end": 960 }, { "place": "kelvingrove", "start": 960, "end": 1080 }, { "place": "boyd_orr", "start": 1085, "end": 1090 }],
+      "claims": [{ "place": "main_building", "start": 540, "end": 660, "activity": "lecture", "society": null }],
+      "testimony": "MOCK: Philosophy at 9, coffee at the union, walk in the park.",
+      "llm_reasoning": "MOCK: Consistent with logs."
+    },
+    {
+      "id": "2878087C", "name": "Danielle Cox", "age": 24, "sex": "F", "year": 1, "subject": "Physics",
+      "height": 171, "hair": "#aefcc1", "societies": ["Skate Society", "Philosophy Society"],
+      "score": 1.5, "flagged": false, "isKingpin": false, "flags": [],
+      "stays": [{ "place": "library", "start": 780, "end": 900 }, { "place": "kelvingrove", "start": 1230, "end": 1300 }],
+      "claims": [{ "place": "library", "start": 780, "end": 900, "activity": "study", "society": null }],
+      "testimony": "MOCK: Lecture, lunch, library, then pres and town.",
+      "llm_reasoning": "MOCK: Consistent with logs."
+    },
+    {
+      "id": "2446198D", "name": "Russell Dixon", "age": 22, "sex": "M", "year": 3, "subject": "Mathematics",
+      "height": 174, "hair": "#23d620", "societies": ["Bad Movie Society"],
+      "score": 0.8, "flagged": false, "isKingpin": false, "flags": [],
+      "stays": [{ "place": "main_building", "start": 660, "end": 780 }],
+      "claims": [{ "place": "main_building", "start": 660, "end": 780, "activity": "lecture", "society": null }],
+      "testimony": "MOCK: Watched bad films, then my maths lecture.",
+      "llm_reasoning": "MOCK: Consistent with logs."
+    },
+    {
+      "id": "2797619M", "name": "Russell Matthews", "age": 21, "sex": "M", "year": 3, "subject": "Physics",
+      "height": 179, "hair": "#3d2b1f", "societies": [],
+      "score": 1.9, "flagged": false, "isKingpin": false, "flags": [],
+      "stays": [{ "place": "qmu", "start": 630, "end": 690 }, { "place": "kelvingrove", "start": 1200, "end": 1230 }],
+      "claims": [],
+      "testimony": "MOCK: Physics at 9, met Beth, went to the GUU.",
+      "llm_reasoning": "MOCK: No contradictions found."
+    },
+    {
+      "id": "2470481H", "name": "Marc Harrison", "age": 22, "sex": "M", "year": 3, "subject": "Engineering",
+      "height": 172, "hair": "#cbe253", "societies": ["Chess Society", "Big Band Society", "Italian Society"],
+      "score": 0.6, "flagged": false, "isKingpin": true, "flags": [],
+      "stays": [{ "place": "james_watt", "start": 540, "end": 660 }, { "place": "qmu", "start": 780, "end": 900 }, { "place": "kelvingrove", "start": 218, "end": 333 }, { "place": "library", "start": 1080, "end": 1260 }],
+      "claims": [{ "place": "james_watt", "start": 540, "end": 660, "activity": "lecture", "society": null }],
+      "testimony": "MOCK: Early in, lecture, unwind at the QMU, then library.",
+      "llm_reasoning": "MOCK: Looks clean on rules alone but is co-present with many flagged students (highest weighted degree)."
+    },
+    {
+      "id": "2712324G", "name": "Jonny Craig", "age": 20, "sex": "M", "year": 2, "subject": "Chemistry",
+      "height": 181, "hair": "#d14336", "societies": [],
+      "score": 0.9, "flagged": false, "isKingpin": false, "flags": [],
+      "stays": [{ "place": "library", "start": 534, "end": 580 }, { "place": "adam_smith", "start": 840, "end": 960 }],
+      "claims": [],
+      "testimony": "MOCK: Library, chemistry, group project, pint.",
+      "llm_reasoning": "MOCK: No contradictions found."
+    }
+  ],
+
+  "edges": [
+    { "a": "2495155L", "b": "2470551P", "weight": 0.91, "overlap_min": 115, "place": "kelvingrove" },
+    { "a": "2470481H", "b": "2495155L", "weight": 0.78, "overlap_min": 115, "place": "kelvingrove" },
+    { "a": "2470481H", "b": "2470551P", "weight": 0.74, "overlap_min": 115, "place": "kelvingrove" },
+    { "a": "2470481H", "b": "2523112J", "weight": 0.52, "overlap_min": 60, "place": "qmu" },
+    { "a": "2470481H", "b": "2795502Y", "weight": 0.41, "overlap_min": 30, "place": "kelvingrove" },
+    { "a": "2470481H", "b": "2546112P", "weight": 0.35, "overlap_min": 40, "place": "kelvingrove" },
+    { "a": "2523112J", "b": "2797619M", "weight": 0.44, "overlap_min": 30, "place": "kelvingrove" },
+    { "a": "2523112J", "b": "2795502Y", "weight": 0.38, "overlap_min": 30, "place": "kelvingrove" },
+    { "a": "2527287T", "b": "2546112P", "weight": 0.12, "overlap_min": 20, "place": "qmu" },
+    { "a": "2878087C", "b": "2797619M", "weight": 0.15, "overlap_min": 25, "place": "kelvingrove" },
+    { "a": "2446198D", "b": "2527287T", "weight": 0.10, "overlap_min": 15, "place": "main_building" },
+    { "a": "2712324G", "b": "2878087C", "weight": 0.08, "overlap_min": 10, "place": "library" }
+  ],
+
+  "findings": [
+    { "rank": 1, "text": "Two students were in Kelvingrove Park together from 03:38 to 05:33, when no building is open.", "time_start": 218, "time_end": 333, "place": "kelvingrove", "students": ["2495155L", "2470551P"] },
+    { "rank": 2, "text": "A third student with no flags was in the same part of the park at the same time.", "time_start": 218, "time_end": 333, "place": "kelvingrove", "students": ["2470481H"] },
+    { "rank": 3, "text": "One student reached Kelvingrove Park from the QMU in 3 minutes, faster than walking allows.", "time_start": 1320, "time_end": 1323, "place": "kelvingrove", "students": ["2523112J"] },
+    { "rank": 4, "text": "A student said he sat alone in the park, but logs show another student there for 43 minutes.", "time_start": 440, "time_end": 523, "place": "kelvingrove", "students": ["2546112P"] },
+    { "rank": 5, "text": "A tutorial attendee stayed in Boyd Orr for hours beyond the listed lecture slot.", "time_start": 720, "time_end": 940, "place": "boyd_orr", "students": ["2795502Y"] }
+  ],
+
+  "kingpin": "2470481H"
+}
