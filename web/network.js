@@ -86,10 +86,11 @@
       if (z === 'in') t.call(zoom.scaleBy, 1.4);
       if (z === 'out') t.call(zoom.scaleBy, 1 / 1.4);
       if (z === 'reset') { applyFocus(null); }
-      if (z === 'full') document.fullscreenElement ? document.exitFullscreen() : wrap.requestFullscreen?.();
+      // the whole page goes full screen so the legend and reveal button come along
+      if (z === 'full') document.fullscreenElement ? document.exitFullscreen() : el.requestFullscreen?.();
     };
     // the layout was centred for the old size; shift it to the centre of the new one
-    wrap.onfullscreenchange = () => {
+    el.onfullscreenchange = () => {
       if (!svg) return;
       const n = svg.node();
       svg.transition().duration(400).call(zoom.transform, d3.zoomIdentity.translate((n.clientWidth - W) / 2, (n.clientHeight - H) / 2));
@@ -169,7 +170,7 @@
           <h2 style="margin:0">Network</h2>
           <button class="btn gold" id="reveal"></button>
           <strong id="kp-name" style="color:var(--gold)"></strong>
-          <span class="muted" style="font-size:13px">Line width = time together, corrected for crowd size. Node size = connections.</span>
+          <span class="muted" style="font-size:13px">Each circle is a student. A line joins two students who were in the same building at the same time. Thicker line: longer together, in a quieter place. Bigger circle: met more people.</span>
         </div>
         <div id="network-wrap"></div>
         <div class="legend">${GROUPS.map(([k, label]) => {
@@ -189,6 +190,6 @@
     update(state, patch) {
       if ('revealMode' in patch) { applyReveal(state.revealMode, true); button(); if (focusKey) applyFocus(focusKey); }
     },
-    unmount() { if (document.fullscreenElement) document.exitFullscreen(); if (sim) sim.stop(); sim = null; svg = null; focusKey = null; }
+    unmount() { if (document.fullscreenElement) document.exitFullscreen(); el.onfullscreenchange = null; if (sim) sim.stop(); sim = null; svg = null; focusKey = null; }
   };
 })();

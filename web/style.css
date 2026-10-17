@@ -420,6 +420,6 @@ button, select, input { font: inherit; color: inherit; }
 .net-controls { position: absolute; right: 12px; bottom: 12px; display: flex; gap: 6px; }
 .net-controls .icon-btn { width: 36px; height: 36px; font-size: 20px; font-weight: 600; background: var(--surface); color: var(--ink); border: 1px solid var(--line); }
 .net-controls .icon-btn:hover { border-color: var(--ink); }
-#network-wrap:fullscreen { background: var(--bg); }
-#network-wrap:fullscreen #network-svg { height: 100vh; border-radius: 0; border: 0; }
+#view:fullscreen { background: var(--bg); padding: 16px 24px; overflow: auto; }
+#view:fullscreen #network-svg { height: calc(100vh - 150px); }
 .net-av { pointer-events: none; }
