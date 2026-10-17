@@ -1,0 +1,40 @@
+{
+  "claims": [
+    {
+      "place": "Kelvingrove",
+      "start": null,
+      "end": null,
+      "activity": "morning stroll",
+      "society": null
+    },
+    {
+      "place": "medicine building",
+      "start": null,
+      "end": null,
+      "activity": "lecture",
+      "society": null
+    },
+    {
+      "place": "home",
+      "start": null,
+      "end": null,
+      "activity": "watch some Godson Gaming",
+      "society": null
+    },
+    {
+      "place": "Boyd Orr",
+      "start": null,
+      "end": null,
+      "activity": "Clash Of Clans social",
+      "society": "clash of clans society"
+    },
+    {
+      "place": "library",
+      "start": null,
+      "end": 1440,
+      "activity": "watching back some lecture recordings from last week",
+      "society": null
+    }
+  ],
+  "overnight_absence": false
+}

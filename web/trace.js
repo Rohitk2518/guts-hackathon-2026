@@ -115,6 +115,7 @@
           <div class="story-map"></div>
           <aside class="story-panel trace-panel">
             <div class="tr-head">
+              ${App.avatar(s, 52)}
               <div><h2>${esc(s.name)}</h2><div class="muted">${esc([s.subject, s.flagged ? 'score ' + s.score.toFixed(1) : 'not flagged'].filter(Boolean).join(', '))}</div></div>
               <div class="tr-clock" id="tr-clock"></div>
             </div>

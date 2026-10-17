@@ -40,6 +40,7 @@
 
       d.innerHTML = `<div class="icard-in">
         <header class="icard-head">
+          ${App.avatar(s, 64)}
           <div>
             <h2>${esc(s.name)}</h2>
             <div class="muted">${esc(sub)}${sub ? ', ' : ''}ID ${esc(s.id)}</div>

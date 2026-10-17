@@ -1,0 +1,47 @@
+{
+  "claims": [
+    {
+      "place": "main building",
+      "start": 600,
+      "end": null,
+      "activity": "vet met lecture (industry standards thing)",
+      "society": null
+    },
+    {
+      "place": "the park",
+      "start": null,
+      "end": null,
+      "activity": "watch the dogs run around",
+      "society": null
+    },
+    {
+      "place": "QMU",
+      "start": null,
+      "end": null,
+      "activity": "briefly went to QMU",
+      "society": null
+    },
+    {
+      "place": "Boyd Orr",
+      "start": null,
+      "end": 1170,
+      "activity": "working in a computer lab",
+      "society": null
+    },
+    {
+      "place": "GUU",
+      "start": null,
+      "end": null,
+      "activity": "kick my feet up",
+      "society": null
+    },
+    {
+      "place": "Hive",
+      "start": null,
+      "end": null,
+      "activity": "tempted to go",
+      "society": null
+    }
+  ],
+  "overnight_absence": false
+}

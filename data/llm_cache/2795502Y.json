@@ -1,0 +1,33 @@
+{
+  "claims": [
+    {
+      "place": "Joseph Black Building",
+      "start": 600,
+      "end": null,
+      "activity": "chemistry lecture",
+      "society": "Minecraft society"
+    },
+    {
+      "place": "Boyd Orr Building",
+      "start": null,
+      "end": 940,
+      "activity": "tutorial",
+      "society": null
+    },
+    {
+      "place": "home",
+      "start": 940,
+      "end": 1410,
+      "activity": "gaming on Minecraft server",
+      "society": "Minecraft society"
+    },
+    {
+      "place": "Kelvingrove Park",
+      "start": 1410,
+      "end": 200,
+      "activity": "long walk to sike up for battle",
+      "society": null
+    }
+  ],
+  "overnight_absence": false
+}
