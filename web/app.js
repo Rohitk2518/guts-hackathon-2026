@@ -23,11 +23,11 @@
   window.Views = window.Views || {};
 
   const TABS = [
-    { mode: 'summary',  label: 'Summary' },
-    { mode: 'timeline', label: 'Timeline' },
-    { mode: 'network',  label: 'Network' },
+    { mode: 'summary',  label: 'Case' },
+    { mode: 'story',    label: 'Story' },
     { mode: 'map',      label: 'Map' },
-    { mode: 'story',    label: '▶ Story' }
+    { mode: 'timeline', label: 'Timeline' },
+    { mode: 'network',  label: 'Network' }
   ];
 
   const App = {
@@ -64,7 +64,7 @@
     renderChrome() {
       document.getElementById('clock-time').textContent = App.fmt(state.currentTime);
       document.getElementById('clock-icon').textContent =
-        state.currentTime != null && App.isNight(state.currentTime) ? '🌙' : '☀';
+        state.currentTime != null && App.isNight(state.currentTime) ? 'Night' : 'Day';
       document.querySelectorAll('.tab').forEach(t =>
         t.classList.toggle('active', t.dataset.mode === state.mode));
     },

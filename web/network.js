@@ -35,8 +35,8 @@
 
     ringSel = g.append('circle').attr('r', d => d.r).attr('fill', 'none').attr('stroke', 'var(--gold)').attr('stroke-width', 2).attr('opacity', 0);
     nodeSel = g.append('circle').attr('r', d => d.r).attr('fill', d => nodeColor(d.s))
-      .attr('stroke', '#0d1017').attr('stroke-width', 2);
-    g.append('title').text(d => `${d.s.name}${d.s.flagged ? ' · score ' + d.s.score.toFixed(1) : ''}`);
+      .attr('stroke', '#fff').attr('stroke-width', 2);
+    g.append('title').text(d => `${d.s.name}${d.s.flagged ? ', score ' + d.s.score.toFixed(1) : ''}`);
     labelSel = g.append('text').attr('class', 'node-label').attr('dy', d => d.r + 13).text(d => d.s.name.split(' ')[0]);
 
     sim = d3.forceSimulation(nodes)
@@ -82,7 +82,7 @@
 
   function button() {
     const b = el.querySelector('#reveal');
-    b.textContent = App.state.revealMode ? '↩ Hide the Mastermind' : '👁 Reveal the Mastermind';
+    b.textContent = App.state.revealMode ? 'Hide the mastermind' : 'Reveal the mastermind';
     const k = el.querySelector('#kp-name');
     k.textContent = App.state.revealMode ? `${App.byId[data.kingpin].name} is the mastermind.` : '';
   }

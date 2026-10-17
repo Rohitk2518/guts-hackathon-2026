@@ -28,7 +28,7 @@
     // night shading (00:00-06:00 and 21:00-24:00)
     [[0, 360], [1260, 1440]].forEach(([a, b]) =>
       svg.append('rect').attr('x', x(a)).attr('y', M.top).attr('width', x(b) - x(a))
-        .attr('height', rows.length * LANE).attr('fill', 'var(--night)').attr('opacity', .7));
+        .attr('height', rows.length * LANE).attr('fill', 'var(--night)'));
 
     // axis
     svg.append('g').attr('class', 'axis').attr('transform', `translate(0,${M.top - 6})`)
@@ -47,7 +47,7 @@
       lane.append('text')
         .attr('class', 'lane-label' + (App.state.selectedStudent === s.id ? ' selected' : ''))
         .attr('x', M.left - 10).attr('y', LANE / 2 + 1).attr('text-anchor', 'end').attr('dominant-baseline', 'middle')
-        .text(s.name + (s.flagged ? ` · ${s.score.toFixed(1)}` : ''))
+        .text(s.name + (s.flagged ? ` (${s.score.toFixed(1)})` : ''))
         .on('click', () => App.selectStudent(s.id));
 
       // stays
@@ -61,14 +61,17 @@
       });
 
       // flags (outline + marker)
-      s.flags.filter(f => f.start != null).forEach(f => {
+      let lastLabel = -Infinity;
+      s.flags.filter(f => f.start != null).sort((a, b) => a.start - b.start).forEach(f => {
         const w = Math.max(6, x(f.end) - x(f.start));
         const c = sevColor[f.severity] || sevColor.low;
         const r = lane.append('rect')
           .attr('x', x(f.start) - 1).attr('y', 1).attr('width', w + 2).attr('height', LANE - 5).attr('rx', 4)
           .attr('fill', 'none').attr('stroke', c).attr('stroke-width', 2);
         r.append('title').text(`${f.rule} (${f.severity}): ${f.detail}`);
-        lane.append('text').attr('x', x(f.start) + 2).attr('y', -1).attr('fill', c).attr('font-size', 8)
+        if (x(f.start) - lastLabel < 60) return;   // skip a label that would print over the previous one
+        lastLabel = x(f.start);
+        lane.append('text').attr('x', x(f.start) + 2).attr('y', -1).attr('fill', c).attr('font-size', 9)
           .attr('font-weight', 700).text(f.rule).style('pointer-events', 'none');
       });
     });
