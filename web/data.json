@@ -7,9 +7,15 @@
     { "id": "adam_smith", "name": "Adam Smith", "lat": 55.8737694, "lng": -4.2900032, "opens": 540, "closes": 1020, "lectures": [{ "subject": "Business", "start": 600, "end": 660 }], "isOutdoor": false },
     { "id": "main_building", "name": "Main Building", "lat": 55.871843, "lng": -4.288341, "opens": 540, "closes": 1020, "lectures": [{ "subject": "Philosophy", "start": 540, "end": 660 }, { "subject": "Veterinary Medicine", "start": 600, "end": 720 }, { "subject": "Mathematics", "start": 660, "end": 780 }], "isOutdoor": false },
     { "id": "wolfson", "name": "Wolfson Medical", "lat": 55.8729374, "lng": -4.293249, "opens": 540, "closes": 1020, "lectures": [{ "subject": "Medicine", "start": 780, "end": 900 }], "isOutdoor": false },
-    { "id": "kelvingrove", "name": "Kelvingrove Park", "lat": 55.8695, "lng": -4.2890, "opens": 0, "closes": 1440, "lectures": [], "isOutdoor": true },
-    { "id": "qmu", "name": "Queen Margaret Union", "lat": 55.8745, "lng": -4.2905, "opens": 480, "closes": 1440, "lectures": [], "isOutdoor": false },
-    { "id": "library", "name": "Library", "lat": 55.8725, "lng": -4.2880, "opens": 480, "closes": 1440, "lectures": [], "isOutdoor": false }
+    { "id": "kelvingrove", "name": "Kelvingrove Park", "lat": 55.8690076, "lng": -4.2823603, "opens": 0, "closes": 1440, "lectures": [], "isOutdoor": true },
+    { "id": "qmu", "name": "Queen Margaret Union", "lat": 55.8736412, "lng": -4.2915321, "opens": 480, "closes": 1380, "lectures": [], "isOutdoor": false },
+    { "id": "library", "name": "Library", "lat": 55.8733888, "lng": -4.289028, "opens": 420, "closes": 120, "lectures": [], "isOutdoor": false },
+    { "id": "guu", "name": "Glasgow University Union", "lat": 55.8725047, "lng": -4.2849708, "opens": 540, "closes": 1380, "lectures": [], "isOutdoor": false },
+    { "id": "hive", "name": "The Hive", "lat": 55.872865, "lng": -4.284643, "opens": 1320, "closes": 120, "lectures": [], "isOutdoor": false },
+    { "id": "sir_alwyn", "name": "Sir Alwyn Williams", "lat": 55.8739703, "lng": -4.2919055, "opens": 540, "closes": 1020, "lectures": [], "isOutdoor": false },
+    { "id": "st_andrews", "name": "St Andrews", "lat": 55.8716388, "lng": -4.2796039, "opens": 540, "closes": 1020, "lectures": [], "isOutdoor": false },
+    { "id": "joseph_black", "name": "Joseph Black", "lat": 55.8720857, "lng": -4.293137, "opens": 540, "closes": 1020, "lectures": [], "isOutdoor": false },
+    { "id": "kelvin", "name": "Kelvin Building", "lat": 55.8715591, "lng": -4.2917287, "opens": 540, "closes": 1020, "lectures": [], "isOutdoor": false }
   ],
 
   "students": [
