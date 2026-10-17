@@ -340,6 +340,8 @@ button, select, input { font: inherit; color: inherit; }
 .story-text h2 { font-size: 24px; }
 .story-text p { line-height: 1.6; }
 .story-kp { color: var(--gold); font-size: 30px !important; }
+.story-case { margin: 4px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 8px; font-size: 16px; line-height: 1.45; }
+.story-case li::marker { color: var(--gold); }
 .story-who { display: flex; flex-wrap: wrap; gap: 8px; }
 .who-chip { border: 1px solid var(--line); background: var(--raised); border-radius: 99px; padding: 4px 12px; font-size: 13px; font-weight: 600; cursor: pointer; }
 .who-chip.flagged { border-color: var(--alert); color: var(--alert); }

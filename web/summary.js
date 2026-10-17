@@ -10,10 +10,8 @@
       const top = data.findings.slice().sort((a, b) => a.rank - b.rank).slice(0, 3);
       const place = App.placeName;
       const suspects = App.rankSuspects().slice(0, 3);
-      // after the reveal the brief states the conclusion: the kingpin and the flagged students they met (strongest link first)
-      const kp = App.byId[data.kingpin], w = {};
-      data.edges.forEach(e => { const o = e.a === data.kingpin ? e.b : e.b === data.kingpin ? e.a : null; if (o) w[o] = Math.max(w[o] || 0, e.weight); });
-      const accomplices = Object.keys(w).map(id => App.byId[id]).filter(s => s.flagged).sort((a, b) => w[b.id] - w[a.id]);
+      // after the reveal the brief states the conclusion, with the same numbers as the story reveal
+      const kc = App.kingpinCase(), kp = kc && kc.kp;
 
       el.innerHTML = `
         <div class="case-page">
@@ -23,7 +21,7 @@
             We checked <b>${data.students.length} students</b> against ${swipes} building log entries and their own statements.
             <b class="sus">${flagged} stories don't hold up.</b>
             ${kp && App.state.revealMode
-              ? `The kingpin is <b class="kp">${esc(kp.name)}</b>. They broke no rules, but met ${accomplices.length} flagged student${accomplices.length === 1 ? '' : 's'}${accomplices.length ? `: ${accomplices.map(s => esc(s.name)).join(', ')}` : ''}.`
+              ? `The kingpin is <b class="kp">${esc(kp.name)}</b>. They broke no rules, yet spent a combined ${App.dur(kc.minutes)} with ${kc.contacts.length} of the ${kc.breakers} students who did${kc.contacts.length ? `: ${kc.contacts.map(x => esc(x.s.name)).join(', ')}` : ''}${kc.rank === 1 ? ', more than any other student' : ''}.`
               : `One person, the kingpin, organised it, and on paper they look clean. Their name is <span class="redacted" aria-label="hidden">Name withheld</span>.`}
           </p>
 
