@@ -23,8 +23,8 @@
   --clean: #737d8e;
   --gold: #f4c24f;
   --accent: #5b8ef0;
-  --outdoor: #5aa765;
-  --indoor: #5b8ef0;
+  --stay: #3f8f5a;
+  --claim: #2783a8;
   --night: #0b0e14;
   --map-night: #000;
   --map-filter: invert(1) hue-rotate(180deg) grayscale(1) brightness(.78) contrast(.92);
@@ -45,8 +45,8 @@
   --clean: #8b929b;
   --gold: #c08b00;
   --accent: #1f5fd1;
-  --outdoor: #4f8a3c;
-  --indoor: #1f5fd1;
+  --stay: #4f8a3c;
+  --claim: #1f5fd1;
   --night: #e4e8ef;
   --map-night: #0f1b33;
   --map-filter: grayscale(.9) contrast(.92) brightness(1.04);
@@ -170,6 +170,21 @@ button, select, input { font: inherit; color: inherit; }
 .scrubber line { stroke: var(--ink); stroke-width: 1.5; }
 .scrubber .handle { fill: var(--ink); cursor: ew-resize; }
 .scrubber text { fill: var(--bg); font-size: 11px; font-weight: 700; }
+
+/* flag popover (appended to body, fixed position) */
+.flag-pop {
+  position: fixed; z-index: 50; width: 300px; padding: 16px;
+  background: var(--panel-2); border: 1px solid var(--line); border-radius: var(--radius);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, .55); font-size: 14px;
+}
+.flag-pop p { margin: 10px 0 14px; line-height: 1.45; }
+.flag-pop-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.flag-pop-close {
+  position: absolute; top: 6px; right: 8px; background: none; border: 0; color: var(--muted);
+  font-size: 20px; line-height: 1; cursor: pointer;
+}
+.flag-pop-close:hover { color: var(--text); }
+.flag-pop .btn { padding: 8px 14px; font-size: 13px; }
 
 /* ----- network ----- */
 #network-svg { width: 100%; height: max(380px, calc(100vh - 250px)); background: var(--surface); border-radius: var(--radius); border: 1px solid var(--line); }
