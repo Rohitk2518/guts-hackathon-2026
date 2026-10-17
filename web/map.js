@@ -206,7 +206,7 @@
       who.innerHTML = `
         <div class="who-name">${s.name}</div>
         <div class="who-sub">${[s.subject, s.flagged ? 'score ' + s.score.toFixed(1) : 'not flagged'].filter(Boolean).join(', ')}</div>
-        <div>${s.flags.map(f => `<span class="chip ${f.severity === 'high' ? '' : f.severity}">${f.rule}</span>`).join('')}</div>
+        <div>${s.flags.map(f => `<span class="chip ${App.sev(f)}">${f.rule}</span>`).join('')}</div>
         <ol class="route">${route.map(st => `<li class="${covers(st, t) ? 'now' : st.end <= t ? 'past' : ''}"><time>${App.fmt(st.start)}</time><span>${place(st.place)}</span></li>`).join('')}</ol>`;
     }
   }

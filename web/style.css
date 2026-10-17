@@ -268,6 +268,43 @@ button, select, input { font: inherit; color: inherit; }
   .finding .when { grid-column: 2; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .pulse, .link.kingpin-link, .trail { animation: none; }
+  .pulse, .link.kingpin-link, .trail, .icard[open] { animation: none; }
   * { transition: none !important; }
 }
+
+/* ----- interrogation card ----- */
+.icard {
+  width: min(920px, calc(100vw - 32px)); max-height: calc(100vh - 48px); padding: 0;
+  background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 12px;
+}
+.icard::backdrop { background: rgba(5, 8, 14, .6); backdrop-filter: blur(3px); }
+.icard[open] { animation: card-in .22s ease-out; }
+@keyframes card-in { from { opacity: 0; transform: translateY(10px); } }
+.icard-in { padding: 24px 28px; }
+.icard h3 { font-size: 13px; font-weight: 600; color: var(--muted); margin: 0 0 10px; letter-spacing: 0; }
+.icard-head { display: flex; gap: 20px; align-items: flex-start; }
+.icard-head h2 { font-size: 26px; margin: 0; }
+.icard-head .muted { font-size: 13px; }
+.icard-score { margin-left: auto; text-align: right; line-height: 1.1; }
+.icard-score b { display: block; font-size: 30px; }
+.icard-score.alert b { color: var(--alert); }
+.icard-score span { font-size: 12px; color: var(--muted); }
+.icard-actions { display: flex; gap: 8px; align-items: center; }
+.icard-x { background: none; border: 0; font-size: 28px; line-height: 1; color: var(--muted); cursor: pointer; padding: 0 4px; }
+.icard-x:hover { color: var(--ink); }
+.icard-chips { margin: 12px 0 20px; }
+.icard-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.icard-cols section { background: var(--raised); border-radius: var(--radius); padding: 16px; }
+.icard blockquote { margin: 0 0 12px; font-size: 15px; line-height: 1.6; }
+.icard-list { list-style: none; margin: 0; padding: 0; font-size: 14px; }
+.icard-list li { display: grid; grid-template-columns: 7.6em 1fr; gap: 8px; padding: 6px 0; border-top: 1px solid var(--line); }
+.icard-list li:first-child { border-top: 0; }
+.icard-list time { color: var(--muted); }
+.icard-list em { display: block; font-style: normal; font-size: 12px; font-weight: 600; }
+.icard-list li.bad, .icard-list li.bad time { color: var(--alert); }
+.icard-flags, .icard-ai { margin-top: 20px; }
+.icard-flags ul { list-style: none; margin: 0; padding: 0; font-size: 14px; display: flex; flex-direction: column; gap: 6px; }
+.icard-flags .chip { margin-right: 10px; }
+.icard-ai p { margin: 0; padding-left: 14px; border-left: 3px solid var(--accent); line-height: 1.6; }
+.icard-foot { margin-top: 22px; display: flex; justify-content: flex-end; }
+@media (max-width: 700px) { .icard-cols { grid-template-columns: 1fr; } .icard-in { padding: 18px; } }

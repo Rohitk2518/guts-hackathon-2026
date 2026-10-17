@@ -44,6 +44,8 @@
       return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
     },
     isNight(min) { return min < 360 || min >= 1260; },
+    /* flag severity -> chip class ('' = high/red); accepts med or medium */
+    sev(f) { return { med: 'med', medium: 'med', low: 'low' }[String(f.severity).toLowerCase()] || ''; },
 
     subscribe(fn) { listeners.push(fn); },
 
