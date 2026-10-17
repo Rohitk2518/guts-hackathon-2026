@@ -15,8 +15,8 @@
   --gold: #ffcc3d;       /* kingpin */
   --accent: #4fc3f7;     /* interactive */
   --night: #0a0d14;
-  --outdoor: #3f8f5a;
-  --indoor: #5a7bd6;
+  --stay: #3f8f5a;
+  --claim: #2783a8;
 
   --radius: 12px;
   --font: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;

@@ -95,7 +95,7 @@
         lane.append('rect')
           .attr('x', x(st.start)).attr('y', 4)
           .attr('width', Math.max(3, x(st.end) - x(st.start))).attr('height', LANE - 11).attr('rx', 3)
-          .attr('fill', pl.isOutdoor ? 'var(--outdoor)' : 'var(--indoor)').attr('opacity', .5)
+          .attr('fill', 'var(--stay)').attr('opacity', .6)
           .append('title').text(`${pl.name}: ${App.fmt(st.start)} to ${App.fmt(st.end)}`);
       });
 
@@ -105,7 +105,7 @@
         lane.append('rect')
           .attr('x', x(c.start)).attr('y', 4)
           .attr('width', Math.max(3, x(c.end) - x(c.start))).attr('height', LANE - 11).attr('rx', 3)
-          .attr('fill', cp.isOutdoor ? 'var(--outdoor)' : 'var(--indoor)').attr('opacity', .5)
+          .attr('fill', 'var(--claim)').attr('opacity', .6)
           .append('title').text(`${cp.name}: ${App.fmt(c.start)} to ${App.fmt(c.end)}`);
       });
 
@@ -169,8 +169,8 @@
         </div>
         <div class="chart-wrap"></div>
         <div class="legend">
-          <span><i style="background:var(--indoor)"></i>Indoor stay</span>
-          <span><i style="background:var(--outdoor)"></i>Outdoor stay</span>
+          <span><i style="background:var(--stay)"></i>Logged stay</span>
+          <span><i style="background:var(--claim)"></i>Claimed stay</span>
           <span><i style="background:var(--clean)"></i>Claimed location</span>
           <span><i style="border:2px solid var(--alert)"></i>High flag</span>
           <span><i style="border:2px solid var(--warn)"></i>Medium flag</span>
