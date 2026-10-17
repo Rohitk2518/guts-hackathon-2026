@@ -1,15 +1,17 @@
 /* timeline.js: D3 swimlane (Danielle)
- * One lane per student. Coloured bars = stays (green outdoor, blue indoor).
+ * One lane per student. Coloured bars = stays (green confirmed, blue claimed).
  * Red/amber outlines = flags (needs optional flag.start / flag.end in data.json).
  * Draggable scrubber is bound to state.currentTime.
  */
 (function () {
-  const M = { top: 34, right: 24, bottom: 8, left: 150 };
-  const LANE = 28;
+  const AVATAR = 30;                       // avatar size in px (passed to App.avatar)
+  const M = { top: 34, right: 24, bottom: 8, left: 200 };   // left column holds avatar + name
+  const LANE = AVATAR + 4;
+  const LANE_MAX = 1640;
   let svg, x, showAll = false, showStays = true, showClaims = true, el, data, drawn = false;
 
   const sevColor = { high: 'var(--alert)', med: 'var(--warn)', low: 'var(--low)' };
-  
+
   /* ---- flag popover: an HTML div, fixed-positioned so the chart's scroll area can't clip it ---- */
   let pop = null;
   function closePop() {
@@ -24,6 +26,11 @@
     closePop();
     pop = document.createElement('div');
     pop.className = 'flag-pop';
+    // positioning set inline so it works even if style.css is stale or cached
+    pop.style.position = 'fixed';
+    pop.style.zIndex = '1000';
+    pop.style.left = '0px';
+    pop.style.top = '0px';
     const esc = t => String(t).replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
     pop.innerHTML = `
       <button class="flag-pop-close" aria-label="Close">×</button>
@@ -62,16 +69,16 @@
     wrap.innerHTML = '';
 
     svg = d3.select(wrap).append('svg').attr('width', W).attr('height', H);
-    x = d3.scaleLinear().domain([0, 1440]).range([M.left, W - M.right]);
+    x = d3.scaleLinear().domain([0, LANE_MAX]).range([M.left, W - M.right]);
 
     // night shading (00:00-06:00 and 21:00-24:00)
-    [[0, 360], [1260, 1440]].forEach(([a, b]) =>
+    [[0, 360], [1260, LANE_MAX]].forEach(([a, b]) =>
       svg.append('rect').attr('x', x(a)).attr('y', M.top).attr('width', x(b) - x(a))
-        .attr('height', rows.length * LANE).attr('fill', 'var(--night)'));
+        .attr('height', rows.length * LANE).attr('fill', 'var(--night)').attr('opacity', .7));
 
     // axis
     svg.append('g').attr('class', 'axis').attr('transform', `translate(0,${M.top - 6})`)
-      .call(d3.axisTop(x).tickValues(d3.range(0, 1441, 180)).tickFormat(App.fmt).tickSize(-6));
+      .call(d3.axisTop(x).tickValues(d3.range(0, LANE_MAX + 1, 180)).tickFormat(App.fmt).tickSize(-6));
 
     // lanes
     const g = svg.append('g');
@@ -80,13 +87,25 @@
       const lane = g.append('g').attr('transform', `translate(0,${y})`);
 
       lane.append('rect').attr('class', 'lane-bg' + (s.flagged ? ' flagged' : ''))
-        .attr('x', M.left).attr('width', x(1440) - M.left).attr('height', LANE - 3).attr('rx', 4)
+        .attr('x', M.left).attr('width', x(LANE_MAX) - M.left).attr('height', LANE - 3).attr('rx', 4)
         .attr('opacity', .55);
+
+      // student photo to the left of the name (HTML from App.avatar, hosted in a foreignObject)
+      if (typeof App.avatar === 'function') {
+        lane.append('foreignObject')
+          .attr('x', 6).attr('y', (LANE - 3 - AVATAR) / 2).attr('width', AVATAR).attr('height', AVATAR)
+          .style('cursor', 'pointer')
+          .on('click', () => App.selectStudent(s.id))
+          .append('xhtml:div')
+          .style('width', AVATAR + 'px').style('height', AVATAR + 'px').style('line-height', 0)
+          .html(`${App.avatar(s, AVATAR)}`);
+      }
 
       lane.append('text')
         .attr('class', 'lane-label' + (App.state.selectedStudent === s.id ? ' selected' : ''))
-        .attr('x', M.left - 10).attr('y', LANE / 2 + 1).attr('text-anchor', 'end').attr('dominant-baseline', 'middle')
-        .text(s.name + (s.flagged ? ` (${s.score.toFixed(1)})` : ''))
+        .attr('x', typeof App.avatar === 'function' ? AVATAR + 16 : 10)
+        .attr('y', LANE / 2 - 1).attr('text-anchor', 'start').attr('dominant-baseline', 'middle')
+        .text(s.name + (s.flagged ? ` · ${s.score.toFixed(1)}` : ''))
         .on('click', () => App.selectStudent(s.id));
 
       // stays
@@ -94,7 +113,7 @@
         const pl = App.placeById[st.place] || { name: st.place };
         lane.append('rect')
           .attr('x', x(st.start)).attr('y', 4)
-          .attr('width', Math.max(3, x(st.end) - x(st.start))).attr('height', LANE - 20).attr('rx', 3)
+          .attr('width', Math.max(3, x(st.end) - x(st.start))).attr('height', LANE - 24).attr('rx', 3)
           .attr('fill', 'var(--stay)')
           .append('title').text(`${pl.name}: ${App.fmt(st.start)} to ${App.fmt(st.end)}`);
       });
@@ -104,27 +123,35 @@
         const cp = App.placeById[c.place] || {name: c.place};
         lane.append('rect')
           .attr('x', x(c.start)).attr('y', 15)
-          .attr('width', Math.max(3, x(c.end) - x(c.start))).attr('height', LANE - 20).attr('rx', 3)
+          .attr('width', Math.max(3, x(c.end) - x(c.start))).attr('height', LANE - 24).attr('rx', 3)
           .attr('fill', 'var(--claim)').attr('opacity', .6)
           .append('title').text(`${cp.name}: ${App.fmt(c.start)} to ${App.fmt(c.end)}`);
       });
 
       // flags (outline + marker)
-      let lastLabel = -Infinity;
-      s.flags.filter(f => f.start != null).sort((a, b) => a.start - b.start).forEach(f => {
+      s.flags.filter(f => f.start != null).forEach(f => {
         const w = Math.max(6, x(f.end) - x(f.start));
         const c = sevColor[f.severity] || sevColor.low;
-        // label is hidden until the flag box is hovered
-        const label = lane.append('text').attr('x', x(f.start) + 2).attr('y', -1).attr('fill', c).attr('font-size', 8)
-          .attr('font-weight', 700).text(f.rule).attr('opacity', 0).style('pointer-events', 'none');
+
         const r = lane.append('rect')
           .attr('x', x(f.start) - 1).attr('y', 1).attr('width', w + 2).attr('height', LANE - 5).attr('rx', 4)
-          .attr('fill', 'transparent').attr('stroke', c).attr('stroke-width', 2)
+          .attr('fill', 'var(--night)').attr('fill-opacity', 0)
+          .attr('stroke', c).attr('stroke-width', 2)
           .style('pointer-events', 'all')
           .style('cursor', 'pointer')
-          .on('mouseenter', () => label.attr('opacity', 1))
-          .on('mouseleave', () => label.attr('opacity', 0))
+          .on('mouseenter', function () {
+            label.transition().duration(120).attr('opacity', 1);
+            d3.select(this).transition().duration(120).attr('fill-opacity', 0.65);
+          })
+          .on('mouseleave', function () {
+            label.transition().duration(120).attr('opacity', 0);
+            d3.select(this).transition().duration(120).attr('fill-opacity', 0);
+          })
           .on('click', ev => { ev.stopPropagation(); showPop(ev.currentTarget, s, f); });
+                // label is hidden until the flag box is hovered
+        const label = lane.append('text').attr('x', x(f.start) + 4).attr('y', 20).attr('fill', c).attr('font-size', 12)
+          .attr('font-weight', 700).text(f.rule).attr('opacity', 0).style('pointer-events', 'none');
+
         r.append('title').text(`${f.rule} (${f.severity}): ${f.detail}`);
       });
     });
