@@ -123,6 +123,21 @@ h1, h2, h3 { margin: 0 0 8px; }
 /* ----- timeline ----- */
 .chart-wrap { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px; overflow-x: auto; }
 .chart-wrap svg { display: block; }
+
+/* flag popover (appended to body, fixed position) */
+.flag-pop {
+  position: fixed; z-index: 50; width: 300px; padding: 16px;
+  background: var(--panel-2); border: 1px solid var(--line); border-radius: var(--radius);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, .55); font-size: 14px;
+}
+.flag-pop p { margin: 10px 0 14px; line-height: 1.45; }
+.flag-pop-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.flag-pop-close {
+  position: absolute; top: 6px; right: 8px; background: none; border: 0; color: var(--muted);
+  font-size: 20px; line-height: 1; cursor: pointer;
+}
+.flag-pop-close:hover { color: var(--text); }
+.flag-pop .btn { padding: 8px 14px; font-size: 13px; }
 .lane-label { fill: var(--text); font-size: 12px; cursor: pointer; }
 .lane-label:hover { fill: var(--accent); }
 .lane-label.selected { fill: var(--accent); font-weight: 700; }

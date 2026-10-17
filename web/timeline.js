@@ -6,9 +6,48 @@
 (function () {
   const M = { top: 34, right: 24, bottom: 8, left: 150 };
   const LANE = 28;
-  let svg, x, showAll = false, el, data, drawn = false;
+  let svg, x, showAll = false, showStays = true, showClaims = true, el, data, drawn = false;
 
   const sevColor = { high: 'var(--alert)', med: 'var(--warn)', low: 'var(--low)' };
+
+  /* ---- flag popover: an HTML div, fixed-positioned so the chart's scroll area can't clip it ---- */
+  let pop = null;
+  function closePop() {
+    if (pop) { pop.remove(); pop = null; }
+    document.removeEventListener('keydown', onKey);
+    document.removeEventListener('mousedown', onOutside, true);
+  }
+  function onKey(e) { if (e.key === 'Escape') closePop(); }
+  function onOutside(e) { if (pop && !pop.contains(e.target)) closePop(); }
+
+  function showPop(anchor, s, f) {
+    closePop();
+    pop = document.createElement('div');
+    pop.className = 'flag-pop';
+    const esc = t => String(t).replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
+    pop.innerHTML = `
+      <button class="flag-pop-close" aria-label="Close">×</button>
+      <div class="flag-pop-head"><span class="chip ${f.severity === 'high' ? '' : f.severity}">${esc(f.rule)}</span>
+        <strong>${esc(s.name)}</strong></div>
+      <div class="mono muted">${App.fmt(f.start)} to ${App.fmt(f.end)} · ${esc(f.severity)} severity</div>
+      <p>${esc(f.detail)}</p>
+      <button class="btn secondary flag-pop-open">Open interrogation card</button>`;
+    document.body.appendChild(pop);
+
+    // position below the flag box, flipped/clamped to stay on screen
+    const a = anchor.getBoundingClientRect();
+    const pw = pop.offsetWidth, ph = pop.offsetHeight;
+    let left = Math.min(Math.max(8, a.left), window.innerWidth - pw - 8);
+    let top = a.bottom + 8;
+    if (top + ph > window.innerHeight - 8) top = Math.max(8, a.top - ph - 8);
+    pop.style.left = left + 'px';
+    pop.style.top = top + 'px';
+
+    pop.querySelector('.flag-pop-close').onclick = closePop;
+    pop.querySelector('.flag-pop-open').onclick = () => { closePop(); App.selectStudent(s.id); };
+    document.addEventListener('keydown', onKey);
+    document.addEventListener('mousedown', onOutside, true);
+  }
 
   function lanes() {
     const list = data.students.slice().sort((a, b) => b.score - a.score);
@@ -51,25 +90,41 @@
         .on('click', () => App.selectStudent(s.id));
 
       // stays
-      s.stays.forEach(st => {
+      (showStays ? s.stays : []).forEach(st => {
         const pl = App.placeById[st.place] || { name: st.place };
         lane.append('rect')
           .attr('x', x(st.start)).attr('y', 4)
           .attr('width', Math.max(3, x(st.end) - x(st.start))).attr('height', LANE - 11).attr('rx', 3)
-          .attr('fill', pl.isOutdoor ? 'var(--outdoor)' : 'var(--indoor)').attr('opacity', .9)
+          .attr('fill', pl.isOutdoor ? 'var(--outdoor)' : 'var(--indoor)').attr('opacity', .5)
           .append('title').text(`${pl.name}: ${App.fmt(st.start)} to ${App.fmt(st.end)}`);
+      });
+
+      // claims
+      (showClaims ? s.claims : []).forEach(c => {
+        const cp = App.placeById[c.place] || {name: c.place};
+        lane.append('rect')
+          .attr('x', x(c.start)).attr('y', 4)
+          .attr('width', Math.max(3, x(c.end) - x(c.start))).attr('height', LANE - 11).attr('rx', 3)
+          .attr('fill', cp.isOutdoor ? 'var(--outdoor)' : 'var(--indoor)').attr('opacity', .5)
+          .append('title').text(`${cp.name}: ${App.fmt(c.start)} to ${App.fmt(c.end)}`);
       });
 
       // flags (outline + marker)
       s.flags.filter(f => f.start != null).forEach(f => {
         const w = Math.max(6, x(f.end) - x(f.start));
         const c = sevColor[f.severity] || sevColor.low;
+        // label is hidden until the flag box is hovered
+        const label = lane.append('text').attr('x', x(f.start) + 2).attr('y', -1).attr('fill', c).attr('font-size', 8)
+          .attr('font-weight', 700).text(f.rule).attr('opacity', 0).style('pointer-events', 'none');
         const r = lane.append('rect')
           .attr('x', x(f.start) - 1).attr('y', 1).attr('width', w + 2).attr('height', LANE - 5).attr('rx', 4)
-          .attr('fill', 'none').attr('stroke', c).attr('stroke-width', 2);
+          .attr('fill', 'transparent').attr('stroke', c).attr('stroke-width', 2)
+          .style('pointer-events', 'all')
+          .style('cursor', 'pointer')
+          .on('mouseenter', () => label.attr('opacity', 1))
+          .on('mouseleave', () => label.attr('opacity', 0))
+          .on('click', ev => { ev.stopPropagation(); showPop(ev.currentTarget, s, f); });
         r.append('title').text(`${f.rule} (${f.severity}): ${f.detail}`);
-        lane.append('text').attr('x', x(f.start) + 2).attr('y', -1).attr('fill', c).attr('font-size', 8)
-          .attr('font-weight', 700).text(f.rule).style('pointer-events', 'none');
       });
     });
 
@@ -85,6 +140,7 @@
     });
     sc.call(drag);
     svg.on('click', ev => {
+      closePop();
       const px = d3.pointer(ev)[0];
       if (px >= M.left) App.setState({ currentTime: Math.round(Math.max(0, Math.min(1439, x.invert(px)))) });
     });
@@ -107,12 +163,15 @@
         <div class="toolbar">
           <h2 style="margin:0">Timeline</h2>
           <label><input type="checkbox" id="all"> Include clean students</label>
+          <label><input type="checkbox" id="show-stays"> Show stays (logs)</label>
+          <label><input type="checkbox" id="show-claims"> Show claims (testimony)</label>
           <span class="muted" style="font-size:13px">Drag or click to move the clock. Click a name to open their card.</span>
         </div>
         <div class="chart-wrap"></div>
         <div class="legend">
           <span><i style="background:var(--indoor)"></i>Indoor stay</span>
           <span><i style="background:var(--outdoor)"></i>Outdoor stay</span>
+          <span><i style="background:var(--clean)"></i>Claimed location</span>
           <span><i style="border:2px solid var(--alert)"></i>High flag</span>
           <span><i style="border:2px solid var(--warn)"></i>Medium flag</span>
           <span><i style="border:2px solid var(--low)"></i>Low flag</span>
@@ -120,12 +179,16 @@
         </div>`;
       el.querySelector('#all').checked = showAll;
       el.querySelector('#all').onchange = e => { showAll = e.target.checked; draw(); };
+      el.querySelector('#show-stays').checked = showStays;
+      el.querySelector('#show-stays').onchange = e => { showStays = e.target.checked; draw(); };
+      el.querySelector('#show-claims').checked = showClaims;
+      el.querySelector('#show-claims').onchange = e => { showClaims = e.target.checked; draw(); };
       draw();
       window.addEventListener('resize', this._rs = () => draw());
     },
     update(state, patch) {
       if ('selectedStudent' in patch) draw(); else moveScrubber();
     },
-    unmount() { window.removeEventListener('resize', this._rs); drawn = false; }
+    unmount() { closePop(); window.removeEventListener('resize', this._rs); drawn = false; }
   };
 })();
