@@ -95,7 +95,14 @@
           '<p>Open via a web server, not file://. Run <code>python -m http.server</code> in <code>web/</code>.</p></div>';
         return;
       }
-      App.data.students.forEach(s => (App.byId[s.id] = s));
+      // fill fields the pipeline may leave out, so every view can rely on them
+      App.data.students.forEach(s => {
+        s.flags = s.flags || []; s.stays = s.stays || []; s.claims = s.claims || [];
+        s.score = s.score ?? 0;
+        if (s.flagged == null) s.flagged = s.flags.length > 0;
+        s.isKingpin = s.id === App.data.kingpin;
+        App.byId[s.id] = s;
+      });
       App.data.buildings.forEach(b => (App.placeById[b.id] = b));
       document.getElementById('mock-badge').hidden = !(App.data.meta && App.data.meta.mock);
 

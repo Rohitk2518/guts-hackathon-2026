@@ -11,8 +11,8 @@
   const WALK_MAX = 30;   // ponytail: gaps longer than this hide the dot (left campus); tune if real data looks sparse
   const ZOOM = 2.4;
   // label side per building where the default (below) collides; tune by eye
-  const LABEL = { boyd_orr: 'left', sir_alwyn: 'above', adam_smith: 'above', hive: 'above', kelvin: 'right' };
-  const LABEL_AT = { below: [0, 22, 'middle'], above: [0, -26, 'middle'], left: [-14, 2, 'end'], right: [14, 2, 'start'] };
+  const LABEL = { boyd_orr: 'left', sir_alwyn: 'above', adam_smith: 'above', hive: 'above', kelvin: 'right', kelvingrove: 'park' };
+  const LABEL_AT = { park: [0, -78, 'middle'], below: [0, 22, 'middle'], above: [0, -26, 'middle'], left: [-14, 2, 'end'], right: [14, 2, 'start'] };
 
   let svg, data, pos = {}, stays = {}, timer = null, highlightIds = null;
 
@@ -29,6 +29,7 @@
     const s = Math.min((W - 2 * PAD) / (x1 - x0), (H - 2 * PAD) / (y1 - y0));
     const ox = (W - s * (x1 - x0)) / 2, oy = (H - s * (y1 - y0)) / 2;
     bs.forEach((b, i) => (pos[b.id] = [ox + (px[i] - x0) * s, oy + (py[i] - y0) * s]));
+    return s / 111320;   // viewBox units per metre (1° latitude ≈ 111.32 km)
   }
 
   // where is student s at minute t? also checks t+1440 for stays that run past midnight
@@ -51,9 +52,15 @@
   }
 
   function draw(el) {
-    project(data.buildings);
-    svg = d3.select(el).append('svg').attr('class', 'campus').attr('viewBox', `0 0 ${W} ${H}`);
+    const perMetre = project(data.buildings);
+    svg = d3.select(el).append('svg').attr('class', 'campus').attr('viewBox', `0 0 ${W} ${H}`)
+      .attr('role', 'img').attr('aria-label', 'Campus map of student locations');
     svg.append('rect').attr('class', 'map-ground').attr('x', -W).attr('y', -H).attr('width', 3 * W).attr('height', 3 * H);
+
+    // 200 m scale bar: lets viewers judge walking distances (5 km/h is about 80 m a minute)
+    const len = 200 * perMetre, sb = svg.append('g').attr('class', 'scale').attr('transform', `translate(${PAD / 2},${H - PAD / 2})`);
+    sb.append('path').attr('d', `M0,-5V0H${len}V-5`);
+    sb.append('text').attr('x', len + 8).attr('y', 0).text('200 m, about 2.5 min walk');
 
     const outdoor = data.buildings.filter(b => b.isOutdoor);
     svg.append('g').selectAll('circle').data(outdoor).join('circle')
@@ -72,7 +79,9 @@
     bg.append('title').text(b => b.name + ': ' + hours(b));
 
     svg.append('g').attr('class', 'markers').selectAll('g').data(data.students, s => s.id).join('g')
-      .attr('class', 'mk')
+      .attr('class', 'mk').attr('tabindex', 0).attr('role', 'button')
+      .attr('aria-label', s => 'Open card for ' + s.name)
+      .on('keydown', (ev, s) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); App.selectStudent(s.id); } })
       .each(function (s) {
         const g = d3.select(this);
         if (s.flagged) g.append('circle').attr('class', 'ring pulse').attr('r', 7);
@@ -89,9 +98,11 @@
     svg.selectAll('.bld').classed('closed', b => !isOpen(b, t));
 
     const slot = {};   // spread students sharing a building around its centre
+    let here = 0;
     svg.selectAll('.mk').each(function (s) {
       const w = where(s, t), g = d3.select(this);
       if (!w) return g.attr('display', 'none');
+      here++;
       let x, y;
       if (w.place) {
         const i = slot[w.place] = (slot[w.place] ?? -1) + 1;
@@ -107,6 +118,8 @@
           (state.selectedStudent === s.id ? ' selected' : '') +
           ((highlightIds && !highlightIds.includes(s.id)) || (state.revealMode && !s.flagged && !s.isKingpin) ? ' dim' : ''));
     });
+    const count = document.getElementById('map-count');
+    if (count) count.textContent = `${here} of ${data.students.length} students on campus`;
   }
 
   function stop(btn) { clearInterval(timer); timer = null; if (btn) btn.textContent = 'Play day'; }
@@ -121,12 +134,13 @@
           <h2 style="margin:0">Campus map</h2>
           <button class="btn secondary" id="map-play">Play day</button>
           <input type="range" id="map-time" class="map-time" min="0" max="1439" step="1" aria-label="Time of day">
-          <span class="muted" style="font-size:13px">Click a dot to open their card.</span>
+          <span class="muted" style="font-size:13px"><span id="map-count"></span>. Click a dot to open their card.</span>
         </div>`) + `
         <div class="map-wrap"></div>
         <div class="legend">
           <span><i style="background:var(--alert)"></i>Flagged student</span>
           <span><i style="background:var(--clean)"></i>Other student</span>
+          <span><i style="background:var(--gold)"></i>Mastermind, after the reveal</span>
           <span><i style="background:var(--indoor)"></i>Building open</span>
           <span><i style="border:1px dashed var(--muted)"></i>Building closed</span>
         </div>`;

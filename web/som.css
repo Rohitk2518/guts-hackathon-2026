@@ -8,6 +8,8 @@
 .map-ground { fill: var(--bg-2); transition: fill .8s; }
 .campus.night .map-ground { fill: var(--night); }
 .park { fill: var(--outdoor); opacity: .16; }
+.scale path { fill: none; stroke: var(--muted); stroke-width: 1.5; }
+.scale text { fill: var(--muted); font-size: 10px; dominant-baseline: middle; }
 
 .bld rect { fill: var(--indoor); stroke: none; transition: fill .4s, opacity .4s; filter: drop-shadow(0 0 6px rgba(90, 123, 214, .7)); }
 .bld.outdoor rect { fill: var(--outdoor); filter: none; rx: 8; }
