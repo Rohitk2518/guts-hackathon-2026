@@ -24,8 +24,8 @@
           <ol class="suspect-list">
             ${suspects.map(s => `
               <li>
-                <div><b class="sus-name">${esc(s.name)}</b>
-                  <span class="sus-detail">${esc(s.flags[0]?.detail || s.flags[0]?.rule || 'No rule flags, scored on other evidence')}${s.flags.length > 1 ? `, and ${s.flags.length - 1} more` : ''}</span></div>
+                <div class="sus-who">${App.avatar(s, 44)}<div><b class="sus-name">${esc(s.name)}</b>
+                  <span class="sus-detail">${esc(s.flags[0]?.detail || s.flags[0]?.rule || 'No rule flags, scored on other evidence')}${s.flags.length > 1 ? `, and ${s.flags.length - 1} more` : ''}</span></div></div>
                 <span class="sus-score" style="color:${App.scoreColor(s)}">${s.score.toFixed(1)}</span>
                 <span class="sus-actions">
                   <button class="btn secondary" data-card="${esc(s.id)}">Open card</button>

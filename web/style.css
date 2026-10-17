@@ -250,14 +250,13 @@ button, select, input { font: inherit; color: inherit; }
 
 .mk { cursor: pointer; transition: opacity .3s; outline: none; }
 .mk .hit { fill: transparent; }
-.mk .person, .mk .face { stroke: var(--halo); stroke-width: 1.5; }
-.mk .face { fill: #efd5bd; }
-.mk .hair { stroke: rgba(0,0,0,.35); stroke-width: .6; }
+.mk .av-bg { fill: var(--raised); stroke-width: 2.5; }
+.mk.clean .av-bg { stroke-opacity: .7; }
+.mk image { pointer-events: none; }
 .mk .ring { fill: none; stroke-width: 2; }
 .mk-name { display: none; font-size: 15px; font-weight: 700; text-anchor: middle; fill: var(--ink); paint-order: stroke; stroke: var(--halo); stroke-width: 4px; pointer-events: none; }
 .campus.show-names .mk.flagged .mk-name, .mk.selected .mk-name, .campus.reveal .mk.kingpin .mk-name { display: block; }
-.mk.selected .person { stroke: var(--accent); stroke-width: 3; }
-.mk:focus-visible .person { stroke: var(--accent); stroke-width: 3; }
+.mk.selected .av-bg, .mk:focus-visible .av-bg { stroke: var(--accent); stroke-width: 4; }
 .mk.dim { opacity: .14; }
 
 @media (max-width: 1000px) {
@@ -342,7 +341,7 @@ button, select, input { font: inherit; color: inherit; }
 .trace-panel { max-height: calc(100vh - 120px); overflow-y: auto; }
 .trace-panel > * { flex-shrink: 0; }   /* scroll the panel, never squash its sections */
 .trace-panel h3 { font-size: 13px; font-weight: 600; color: var(--muted); margin: 0 0 8px; letter-spacing: 0; }
-.tr-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.tr-head { display: flex; align-items: center; gap: 12px; }
 .tr-head h2 { margin: 0; font-size: 22px; }
 .tr-head .muted { font-size: 13px; }
 .tr-clock { font-size: 26px; font-weight: 700; }
@@ -398,3 +397,26 @@ button, select, input { font: inherit; color: inherit; }
 .sus-actions { display: flex; gap: 8px; }
 .sus-actions .btn { padding: 6px 12px; font-size: 13px; }
 @media (max-width: 800px) { .suspect-list li { grid-template-columns: 2em 1fr auto; } .sus-actions { grid-column: 2 / -1; } }
+
+/* crowd badge on the map: "+N" more people at this building */
+.badge { cursor: pointer; }
+.badge circle { fill: var(--ink); stroke: var(--surface); stroke-width: 2; }
+.badge text { fill: var(--bg); font-size: 12px; font-weight: 700; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+.badge:hover circle, .badge:focus-visible circle { fill: var(--accent); }
+.feed li.alert { color: var(--alert); font-weight: 600; }
+
+/* avatars in lists and cards */
+.av { border-radius: 50%; border: 2px solid var(--clean); background: var(--raised); flex: none; object-fit: cover; }
+.icard-head .av { border-width: 3px; }
+.sus-who { display: flex; gap: 12px; align-items: center; }
+.tr-head > div:nth-child(2) { margin-right: auto; }
+.picker .av, .suspects .av { border-width: 1.5px; }
+
+/* network: zoom + full screen controls */
+#network-wrap { position: relative; }
+.net-controls { position: absolute; right: 12px; bottom: 12px; display: flex; gap: 6px; }
+.net-controls .icon-btn { width: 36px; height: 36px; font-size: 20px; font-weight: 600; background: var(--surface); color: var(--ink); border: 1px solid var(--line); }
+.net-controls .icon-btn:hover { border-color: var(--ink); }
+#network-wrap:fullscreen { background: var(--bg); }
+#network-wrap:fullscreen #network-svg { height: 100vh; border-radius: 0; border: 0; }
+.net-av { pointer-events: none; }

@@ -17,14 +17,13 @@
   // label side per building where the default (below) collides; tune by eye
   const LABEL = { boyd_orr_building: 'left', sir_alwyn_williams_building: 'above', adam_smith_building: 'above', the_hive: 'above', kelvin_building: 'right', glasgow_university_union: 'right', kelvingrove_park: 'far' };
   const LABEL_AT = { far: [-54, 5, 'end'], below: [0, 32, 'middle'], above: [0, -36, 'middle'], left: [-20, 5, 'end'], right: [20, 5, 'start'] };
-  // person glyph: head + shoulders, centred on (0,0), about 22 units tall
-  // puppet: body (suspicion colour), face, hair cap (the student's own hair colour); about 22 units tall
-  const BODY = 'M-7.5,11c0,-6 3,-9.2 7.5,-9.2s7.5,3.2 7.5,9.2z';
-  const HAIR = 'M-5,-6.2a5,5 0 0 1 10,0q-2,-1.6 -5,-1.4q-3,.2 -5,1.4z';
+  const MAX_SHOWN = 9;   // avatars drawn per building; the rest fold into a "+N" badge
+  const R = s => (s.score > 0 || s.flagged ? 19 : 15);   // avatar radius; suspects a bit bigger
 
   let svg, data, pos = {}, stays = {}, timer = null, highlightIds = null, base, el, opts = {};
   let crowdAt = {}, placeOf = {};   // from the last render: place -> students there, student -> place
   let showClaims = true, speed = 2, activeMoment = null;
+  let zk = 1;   // marker scale: shrinks a little when the map zooms in so avatars don't balloon
 
   const place = App.placeName;
   const colour = s => App.scoreColor(s);
@@ -70,6 +69,8 @@
     svg = d3.select(wrap).append('svg').attr('class', 'campus').attr('viewBox', base.join(' '))
       .style('aspect-ratio', `${base[2]} / ${base[3]}`)
       .attr('role', 'img').attr('aria-label', 'Campus map of student locations');
+    // circular crop for the avatar images (objectBoundingBox = works at any size)
+    svg.append('defs').html('<clipPath id="av-clip" clipPathUnits="objectBoundingBox"><circle cx=".5" cy=".5" r=".5"/></clipPath>');
     svg.append('image').attr('class', 'basemap').attr('href', 'campus.jpg').attr('width', IMG_W).attr('height', IMG_H);
     svg.append('rect').attr('class', 'map-shade').attr('width', IMG_W).attr('height', IMG_H);
 
@@ -81,8 +82,8 @@
     sb.append('text').attr('x', len + 10).text('200 m, about 2.5 min walk');
 
     const bg = svg.append('g').selectAll('g').data(data.buildings).join('g')
-      .attr('class', b => 'bld' + (b.isOutdoor ? ' outdoor' : ''))
-      .attr('transform', b => `translate(${pos[b.id]})`);
+      .attr('class', b => 'bld bld-mark' + (b.isOutdoor ? ' outdoor' : ''))
+      .attr('transform', b => `translate(${pos[b.id]}) scale(${zk})`);
     bg.append('rect').attr('x', -11).attr('y', -11).attr('width', 22).attr('height', 22).attr('rx', 5);
     bg.append('title').text(b => b.name + ': ' + hours(b));
 
@@ -98,27 +99,31 @@
       })
       .on('keydown', (ev, s) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); App.selectStudent(s.id); } })
       .each(function (s) {
-        const g = d3.select(this), k = s.flagged ? 1.6 : .95;
-        g.append('circle').attr('class', 'hit').attr('r', 22);
-        if (s.flagged) g.append('circle').attr('class', 'ring pulse').attr('r', 19).attr('stroke', colour(s));
-        const p = g.append('g').attr('transform', `scale(${k})`);
-        p.append('path').attr('class', 'person').attr('d', BODY);
-        p.append('circle').attr('class', 'face').attr('cy', -6.4).attr('r', 4.6);
-        p.append('path').attr('class', 'hair').attr('d', HAIR).attr('fill', /^#[0-9a-f]{3,8}$/i.test(s.hair) ? s.hair : '#3d2b1f');
-        g.append('text').attr('class', 'mk-name').attr('y', 34).text(s.name.split(' ')[0]);
-        g.append('title').text(s.name + (s.flagged ? ', score ' + s.score.toFixed(1) : ''));
+        // avatar: generated toon head (hair in the student's colour), ring in the suspicion colour
+        const r = R(s), g = d3.select(this).append('g').attr('class', 'mk-in').attr('transform', `scale(${zk})`);
+        g.append('circle').attr('class', 'hit').attr('r', r + 3);
+        if (s.flagged) g.append('circle').attr('class', 'ring pulse').attr('r', r).attr('stroke', colour(s));
+        g.append('circle').attr('class', 'av-bg').attr('r', r).attr('stroke', colour(s));
+        g.append('image').attr('href', `avatars/${s.id}.svg`).attr('x', -r).attr('y', -r).attr('width', 2 * r).attr('height', 2 * r)
+          .attr('clip-path', 'url(#av-clip)');
+        g.append('text').attr('class', 'mk-name').attr('y', r + 15).text(s.name.split(' ')[0]);
+        d3.select(this).append('title').text(s.name + (s.score > 0 ? ', score ' + s.score.toFixed(1) : ''));
       });
+
+    svg.append('g').attr('class', 'badges');
 
     // labels last so crowds never cover them; class bld so open/closed styling still applies
     svg.append('g').attr('class', 'labels').selectAll('g').data(data.buildings).join('g')
       .attr('class', 'bld bld-label')
-      .attr('transform', b => {
-        const [x, y, anchor] = LABEL_AT[LABEL[b.id] || 'below'];
-        return `translate(${pos[b.id][0] + x},${pos[b.id][1] + y})`;
-      })
+      .attr('transform', labelAt)
       .attr('text-anchor', b => LABEL_AT[LABEL[b.id] || 'below'][2])
       .call(g => g.append('text').attr('class', 'bld-name').text(b => b.name))
       .call(g => g.append('text').attr('class', 'bld-hours').attr('y', 17).text(hours));
+  }
+
+  function labelAt(b) {
+    const [x, y] = LABEL_AT[LABEL[b.id] || 'below'];
+    return `translate(${pos[b.id][0] + x * zk},${pos[b.id][1] + y * zk}) scale(${zk})`;
   }
 
   function render(state) {
@@ -127,17 +132,29 @@
     svg.classed('night', App.isNight(t)).classed('reveal', state.revealMode);
     svg.selectAll('.bld').classed('closed', b => !isOpen(b, t));
 
-    const slot = {}, at = {}, xy = {};   // slot spreads people sharing a building; at = place -> students
+    // who is where; at = place -> everyone there (the picker lists all of them)
+    const wh = {}, at = {}, xy = {};
+    data.students.forEach(s => {
+      const w = where(s, t);
+      if (!w || !pos[w.place || w.from] || (w.to && !pos[w.to])) return;   // off campus
+      wh[s.id] = w;
+      if (w.place) (at[w.place] = at[w.place] || []).push(s);
+    });
+    // draw the most relevant MAX_SHOWN per building: selected, highlighted, mastermind after reveal, then by score
+    const prio = s => (s.id === sel) * 1e4 + (highlightIds?.includes(s.id) ? 5e3 : 0) + (state.revealMode && s.isKingpin) * 4e3 + s.score * 10 + s.flagged * 50;
+    const slot = {}, extra = {};
+    Object.entries(at).forEach(([p, ss]) => {
+      ss.sort((a, b) => prio(b) - prio(a)).slice(0, MAX_SHOWN).forEach((s, i) => (slot[s.id] = i));
+      if (ss.length > MAX_SHOWN) extra[p] = ss;
+    });
     svg.selectAll('.mk').each(function (s) {
-      const w = where(s, t), g = d3.select(this);
-      if (!w || !pos[w.place || w.from] || (w.to && !pos[w.to])) return g.attr('display', 'none');   // off campus
+      const w = wh[s.id], g = d3.select(this);
+      if (!w || (w.place && slot[s.id] == null)) return g.attr('display', 'none');
       let x, y;
       if (w.place) {
-        const i = slot[w.place] = (slot[w.place] ?? -1) + 1;
-        const a = i * 2.4, r = 22 + 6 * Math.sqrt(i);
-        [x, y] = pos[w.place] || [0, 0];
+        const i = slot[s.id], a = i * 2.4, r = (i ? 32 + 13 * Math.sqrt(i) : 30) * zk;
+        [x, y] = pos[w.place];
         x += r * Math.cos(a); y += r * Math.sin(a);
-        (at[w.place] = at[w.place] || []).push(s);
       } else {
         const [ax, ay] = pos[w.from] || [0, 0], [bx, by] = pos[w.to] || [0, 0];
         x = ax + (bx - ax) * w.f; y = ay + (by - ay) * w.f;
@@ -147,14 +164,27 @@
       g.attr('display', null).attr('transform', `translate(${x},${y})`)
         .attr('class', 'mk' + (s.flagged ? ' flagged' : ' clean') + (s.isKingpin ? ' kingpin' : '') + (sel === s.id ? ' selected' : '') +
           ((highlightIds && !highlightIds.includes(s.id)) || (state.revealMode && !s.flagged && !s.isKingpin) ? ' dim' : ''));
-      g.select('.person').attr('fill', gold ? 'var(--gold)' : colour(s));
+      g.select('.av-bg').attr('stroke', gold ? 'var(--gold)' : colour(s));
+      g.select('.mk-in').attr('transform', `scale(${zk * (sel === s.id ? 1.8 : 1)})`);   // the selected / traced person stands out
     });
+
+    // "+N" badge for everyone not drawn at a crowded building; opens the who's-here picker
+    const bd = svg.select('.badges').selectAll('g.badge').data(Object.entries(extra), d => d[0]).join(enter => {
+      const e = enter.append('g').attr('class', 'badge').attr('role', 'button').attr('tabindex', 0);
+      e.append('circle').attr('r', 15);
+      e.append('text');
+      return e;
+    });
+    bd.attr('transform', ([p]) => `translate(${pos[p][0] + 30 * zk},${pos[p][1] - 30 * zk}) scale(${zk})`)
+      .on('click', (ev, [p, ss]) => showPicker(ev, p, ss))
+      .on('keydown', (ev, [p, ss]) => { if (ev.key === 'Enter') showPicker(ev, p, ss); });
+    bd.select('text').text(([, ss]) => '+' + (ss.length - MAX_SHOWN));
 
     drawTrail(sel, t, xy);
     drawGhosts(t, sel);
     crowdAt = at;
     placeOf = Object.fromEntries(Object.entries(at).flatMap(([p, ss]) => ss.map(s => [s.id, p])));
-    renderSide(state, t, at, xy);
+    renderSide(state, t, at, wh);   // wh: everyone on campus, drawn or folded into a badge
   }
 
   // dashed numbered route through the selected student's stays up to now
@@ -197,7 +227,7 @@
     const pk = document.createElement('div');
     pk.className = 'picker';
     pk.innerHTML = `<div class="picker-head">${people.length} people at ${place(p)}</div>
-      <ul>${people.map(s => `<li><button data-id="${App.esc(s.id)}"><i style="background:${colour(s)}"></i>${App.esc(s.name)}${s.score > 0 ? `<b>${s.score.toFixed(1)}</b>` : ''}</button></li>`).join('')}</ul>`;
+      <ul>${people.map(s => `<li><button data-id="${App.esc(s.id)}">${App.avatar(s, 26)}${App.esc(s.name)}${s.score > 0 ? `<b>${s.score.toFixed(1)}</b>` : ''}</button></li>`).join('')}</ul>`;
     wrap.appendChild(pk);
     // open next to the click, kept inside the map
     pk.style.left = Math.min(ev.clientX - box.left + 10, box.width - pk.offsetWidth - 8) + 'px';
@@ -215,7 +245,11 @@
     const q = s => el.querySelector(s);
     const flaggedAt = Object.entries(at).map(([p, ss]) => [p, ss.filter(s => s.flagged || (state.revealMode && s.isKingpin))]);
     const here = Object.keys(xy).length;
-    const alerts = data.students.filter(s => s.flags.some(f => covers(f, t))).length;
+    // alerts: a flag whose time window covers now, or anyone inside a building after it closed
+    const closedNow = Object.entries(at).filter(([p]) => App.placeById[p] && !isOpen(App.placeById[p], t));
+    const alertIds = new Set([...data.students.filter(s => s.flags.some(f => covers(f, t))).map(s => s.id),
+      ...closedNow.flatMap(([, ss]) => ss.map(s => s.id))]);
+    const alerts = alertIds.size;
     q('#st-here').textContent = here;
     q('#st-alerts').textContent = alerts;
     q('#map-now').textContent = App.fmt(t);
@@ -231,9 +265,11 @@
     } else kpBox.hidden = true;
 
     const groups = flaggedAt.filter(([, ss]) => ss.length >= 2);
-    q('#map-feed').innerHTML = groups.length
-      ? groups.map(([p, ss]) => `<li><time>${App.fmt(t)}</time><span>${ss.map(s => s.name.split(' ')[0]).join(', ')} together at ${place(p)}</span></li>`).join('')
-      : '<li class="empty">No suspects together right now.</li>';
+    const feed = [
+      ...closedNow.map(([p, ss]) => `<li class="alert"><time>${App.fmt(t)}</time><span>${ss.length} inside ${place(p)} after it closed</span></li>`),
+      ...groups.map(([p, ss]) => `<li><time>${App.fmt(t)}</time><span>${ss.map(s => App.esc(s.name.split(' ')[0])).join(', ')} together at ${place(p)}</span></li>`)
+    ];
+    q('#map-feed').innerHTML = feed.join('') || '<li class="empty">Nothing unusual right now.</li>';
 
     const s = App.byId[state.selectedStudent];
     const who = q('#map-who');
@@ -251,7 +287,7 @@
     const list = App.rankSuspects().slice();
     if (state.revealMode && App.byId[data.kingpin]) list.unshift(App.byId[data.kingpin]);
     q('#map-suspects').innerHTML = list.map(s => `<li><button data-id="${App.esc(s.id)}" class="${state.selectedStudent === s.id ? 'on' : ''}">
-        <i style="background:${state.revealMode && s.isKingpin ? 'var(--gold)' : colour(s)}"></i>
+        ${App.avatar(s, 30)}
         <span>${App.esc(s.name)}<small>${placeOf[s.id] ? place(placeOf[s.id]) : 'not on campus now'}</small></span>
         <b>${s.isKingpin ? 'mastermind' : s.score.toFixed(1)}</b></button></li>`).join('') || '<li class="empty">No one has a suspicion score yet.</li>';
   }
@@ -277,7 +313,7 @@
   window.Views = window.Views || {};
   window.Views.map = {
     mount(container, d, o = {}) {
-      el = container; data = d; opts = o; pos = {}; highlightIds = null; activeMoment = null;
+      el = container; data = d; opts = o; pos = {}; highlightIds = null; activeMoment = null; zk = 1;
       data.students.forEach(s => (stays[s.id] = s.stays.slice().sort((a, b) => a.start - b.start)));
       const controls = o.controls !== false;
       // one chip per time + place; findings that share both merge their students
@@ -335,7 +371,7 @@
 
       const wrap = el.querySelector('.map-wrap');
       draw(wrap);
-      wrap.insertAdjacentHTML('beforeend', '<div class="map-credit">Basemap: Esri, HERE, Garmin, &copy; OpenStreetMap contributors</div>');
+      wrap.insertAdjacentHTML('beforeend', '<div class="map-credit">Basemap: Esri, HERE, Garmin, &copy; OpenStreetMap contributors. Avatars: ToonHead by Johan Melin, CC BY 4.0, via DiceBear</div>');
       // keep the map and its controls on one screen
       (el.querySelector('.map-main') || wrap).style.maxWidth = `calc((100vh - ${controls ? 250 : 200}px) * ${base[2] / base[3]})`;
       if (!controls) return;
@@ -368,7 +404,12 @@
       if (!svg) return;
       const p = placeId && pos[placeId], w = base[2] / ZOOM, h = base[3] / ZOOM;
       const vb = p ? [p[0] - w / 2, p[1] - h / 2, w, h] : base;
-      svg.transition().duration(900).attr('viewBox', vb.join(' '));
+      zk = p ? 1 / Math.sqrt(ZOOM) : 1;   // zoomed in: draw markers smaller so they stay a sensible size on screen
+      const tr = svg.transition().duration(900);
+      tr.attr('viewBox', vb.join(' '));
+      svg.selectAll('.bld-mark').transition(tr).attr('transform', b => `translate(${pos[b.id]}) scale(${zk})`);
+      svg.selectAll('.bld-label').transition(tr).attr('transform', labelAt);
+      render(App.state);
     },
     highlight(ids) { highlightIds = ids; render(App.state); },
     // minute in [start, end] when most of ids are on campus; findings give the window's first minute

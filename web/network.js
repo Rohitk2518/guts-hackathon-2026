@@ -3,7 +3,7 @@
  * Reveal: kingpin pulls to centre in gold, dashed links animate, unconnected clean students fade.
  */
 (function () {
-  let sim, svg, layer, zoom, nodeSel, linkSel, labelSel, ringSel, el, data, W, H, focusKey = null;
+  let sim, svg, layer, zoom, avSel, nodeSel, linkSel, labelSel, ringSel, el, data, W, H, focusKey = null;
 
   // suspicion band from the score; the legend uses the same bands
   const band = s => (s.score >= 7 ? 'high' : s.score >= 4 ? 'med' : s.score > 0 ? 'low' : 'clean');
@@ -18,7 +18,13 @@
 
   function build() {
     const wrap = el.querySelector('#network-wrap');
-    wrap.innerHTML = '<svg id="network-svg"></svg>';
+    wrap.innerHTML = `<svg id="network-svg"><defs><clipPath id="net-clip" clipPathUnits="objectBoundingBox"><circle cx=".5" cy=".5" r=".5"/></clipPath></defs></svg>
+      <div class="net-controls">
+        <button class="icon-btn" data-z="in" aria-label="Zoom in">+</button>
+        <button class="icon-btn" data-z="out" aria-label="Zoom out">&minus;</button>
+        <button class="icon-btn" data-z="reset" aria-label="Fit everyone"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="8" cy="8" r="5.5"/><circle cx="8" cy="8" r="1.5" fill="currentColor"/></svg></button>
+        <button class="icon-btn" data-z="full" aria-label="Full screen"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4"/></svg></button>
+      </div>`;
     const node = wrap.querySelector('svg');
     W = node.clientWidth || 900; H = node.clientHeight || 640;
     svg = d3.select(node);
@@ -52,6 +58,9 @@
     ringSel = g.append('circle').attr('r', d => d.r).attr('fill', 'none').attr('stroke', 'var(--gold)').attr('stroke-width', 2).attr('opacity', 0);
     nodeSel = g.append('circle').attr('r', d => d.r).attr('fill', d => nodeColor(d.s))
       .attr('stroke', 'var(--surface)').attr('stroke-width', 2);
+    // face inside the coloured disc; the disc's edge still shows the suspicion colour
+    avSel = g.append('image').attr('class', 'net-av').attr('href', d => `avatars/${d.id}.svg`).attr('clip-path', 'url(#net-clip)')
+      .attr('x', d => -d.r * .82).attr('y', d => -d.r * .82).attr('width', d => d.r * 1.64).attr('height', d => d.r * 1.64);
     g.append('title').text(d => `${d.s.name}${d.s.score > 0 ? ', score ' + d.s.score.toFixed(1) : ''}`);
     labelSel = g.append('text').attr('class', 'node-label').attr('dy', d => d.r + 13).text(d => d.s.name.split(' ')[0]);
 
@@ -67,15 +76,40 @@
       });
 
     applyReveal(App.state.revealMode, false);
+    controls(wrap);
+  }
+
+  // zoom buttons and full screen (bottom-right of the graph)
+  function controls(wrap) {
+    wrap.querySelector('.net-controls').onclick = e => {
+      const z = e.target.closest('[data-z]')?.dataset.z, t = svg.transition().duration(350);
+      if (z === 'in') t.call(zoom.scaleBy, 1.4);
+      if (z === 'out') t.call(zoom.scaleBy, 1 / 1.4);
+      if (z === 'reset') { applyFocus(null); }
+      if (z === 'full') document.fullscreenElement ? document.exitFullscreen() : wrap.requestFullscreen?.();
+    };
+    // the layout was centred for the old size; shift it to the centre of the new one
+    wrap.onfullscreenchange = () => {
+      if (!svg) return;
+      const n = svg.node();
+      svg.transition().duration(400).call(zoom.transform, d3.zoomIdentity.translate((n.clientWidth - W) / 2, (n.clientHeight - H) / 2));
+      wrap.querySelector('[data-z=full]').setAttribute('aria-label', document.fullscreenElement ? 'Exit full screen' : 'Full screen');
+    };
   }
 
   // legend click: zoom to that group and fade everyone else; same key again clears
   function applyFocus(key) {
     focusKey = key;
     el.querySelectorAll('.legend-btn').forEach(b => b.classList.toggle('active', b.dataset.g === key));
-    if (!key) { applyReveal(App.state.revealMode, true); svg.transition().duration(700).call(zoom.transform, d3.zoomIdentity); return; }
+    if (!key) {
+      applyReveal(App.state.revealMode, true);
+      const n = svg.node();   // centre for the current size (differs in full screen)
+      svg.transition().duration(700).call(zoom.transform, d3.zoomIdentity.translate((n.clientWidth - W) / 2, (n.clientHeight - H) / 2));
+      return;
+    }
     const on = d => inGroup(key, d.s), t = d3.transition().duration(500);
     nodeSel.transition(t).attr('opacity', d => (on(d) ? 1 : .1));
+    avSel.transition(t).attr('opacity', d => (on(d) ? 1 : .1));
     labelSel.transition(t).attr('opacity', d => (on(d) ? 1 : .05)).text(d => (on(d) ? d.s.name : d.s.name.split(' ')[0]));
     linkSel.transition(t).attr('opacity', d => (on(d.source) || on(d.target) ? .8 : .04));
     ringSel.attr('class', d => (on(d) ? 'pulse' : null)).attr('stroke', d => nodeColor(d.s)).attr('opacity', d => (on(d) ? .8 : 0));
@@ -85,7 +119,8 @@
       if (!pts.length || !svg) return;
       const [x0, x1] = d3.extent(pts, n => n.x), [y0, y1] = d3.extent(pts, n => n.y);
       const k = Math.max(.4, Math.min(1.8, .8 / Math.max((x1 - x0 + 80) / W, (y1 - y0 + 80) / H)));
-      svg.transition().duration(800).call(zoom.transform, d3.zoomIdentity.translate(W / 2, H / 2).scale(k).translate(-(x0 + x1) / 2, -(y0 + y1) / 2));
+      const n = svg.node(), cw = n.clientWidth, ch = n.clientHeight;
+      svg.transition().duration(800).call(zoom.transform, d3.zoomIdentity.translate(cw / 2, ch / 2).scale(k).translate(-(x0 + x1) / 2, -(y0 + y1) / 2));
     }, 300);
   }
 
@@ -100,6 +135,7 @@
       .attr('fill', d => (on && d.id === kp ? 'var(--gold)' : nodeColor(d.s)))
       .attr('r', d => (on && d.id === kp ? d.r * 1.6 : d.r))
       .attr('opacity', d => (on && !d.s.flagged && !connected.has(d.id) ? .15 : 1));
+    avSel.transition(t).attr('opacity', d => (on && !d.s.flagged && !connected.has(d.id) ? .15 : 1));   // faces fade with their disc
     labelSel.transition(t)
       .attr('opacity', d => (on && !d.s.flagged && !connected.has(d.id) ? .1 : 1))
       .text(d => (on && d.id === kp ? d.s.name : d.s.name.split(' ')[0]));
@@ -153,6 +189,6 @@
     update(state, patch) {
       if ('revealMode' in patch) { applyReveal(state.revealMode, true); button(); if (focusKey) applyFocus(focusKey); }
     },
-    unmount() { if (sim) sim.stop(); sim = null; svg = null; focusKey = null; }
+    unmount() { if (document.fullscreenElement) document.exitFullscreen(); if (sim) sim.stop(); sim = null; svg = null; focusKey = null; }
   };
 })();
