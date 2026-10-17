@@ -149,6 +149,22 @@
         'wolfson cafe': 'wolfson medical building', 'medicine building': 'wolfson medical building', cloisters: 'main building'
       };
       const pid = p => ids[key(ALIAS[key(p)] || p)] || p;   // unknown places ("home", "Tesco") stay as written
+      // times inside text: "22:00–02:20" (testimony) or "2208-2219" (rules); end past midnight gets +1440
+      const span = txt => {
+        const m = /(\d\d):?(\d\d)\s*[–-]\s*(\d\d):?(\d\d)/.exec(txt || '');
+        if (!m) return null;
+        const s = +m[1] * 60 + +m[2], e = +m[3] * 60 + +m[4];
+        return { s, e: e <= s ? e + 1440 : e, at: m.index };
+      };
+      // the building named last before the time: "Kelvingrove Park (1210-1532) overlaps QMU ..." -> Kelvingrove Park
+      const names = [...d.buildings.map(b => b.name), ...Object.keys(ALIAS)];
+      const placeIn = (txt, before) => {
+        const low = txt.slice(0, before).toLowerCase();
+        // nearest name ending before the time; the longer name wins a tie ("queen margaret union" over "union")
+        const hit = names.map(n => [n, low.lastIndexOf(n.toLowerCase())]).filter(([, i]) => i >= 0)
+          .sort((a, b) => (b[1] + b[0].length) - (a[1] + a[0].length) || b[0].length - a[0].length)[0];
+        return hit && pid(hit[0]);
+      };
       // drop buildings that are only a misspelling of another one
       d.buildings = d.buildings.filter(b => !ALIAS[key(b.name)] || ids[key(ALIAS[key(b.name)])] === b.id);
       d.students.forEach(s => {
@@ -156,10 +172,10 @@
           x.place = pid(x.place);
           if (x.end < x.start) x.end += 1440;   // "2321-0147" crosses midnight: views expect end > start
         });
-        // flags carry their time only in the text ("... 22:00–02:20 ..."); the map's live alerts need it
+        // flags carry their time only in the text; the map's live alerts need it
         s.flags.forEach(f => {
-          const m = f.start == null && /(\d\d):(\d\d)\s*[–-]\s*(\d\d):(\d\d)/.exec(f.detail || '');
-          if (m) { f.start = +m[1] * 60 + +m[2]; f.end = +m[3] * 60 + +m[4]; if (f.end <= f.start) f.end += 1440; }
+          const t = f.start == null && span(f.detail);
+          if (t) { f.start = t.s; f.end = t.e; }
         });
         s.claims.forEach(c => {
           c.place = pid(c.place);
@@ -174,9 +190,14 @@
       if (dropped) console.warn(`data.json: dropped ${dropped} edges to unknown student ids`);
       d.edges.forEach(e => (e.place = pid(e.place)));
       d.findings.forEach(f => {
-        // testimony findings carry their place and time only in the text: "'the park' 22:00–02:20"
-        const m = f.time_start == null && /'([^']+)'\s+(\d\d):(\d\d)\s*[–-]\s*(\d\d):(\d\d)/.exec(f.text || '');
-        if (m) { f.place = m[1]; f.time_start = +m[2] * 60 + +m[3]; f.time_end = +m[4] * 60 + +m[5]; }
+        // testimony and rule findings carry their place and time only in the text:
+        // "'the park' 22:00–02:20", "In Boyd Orr Building 2208-2219"
+        const t = f.time_start == null && span(f.text);
+        if (t) {
+          f.time_start = t.s; f.time_end = t.e;
+          const q = /'([^']+)'\s*$/.exec(f.text.slice(0, t.at));
+          f.place = f.place ?? (q ? q[1] : placeIn(f.text, t.at));
+        }
         f.place = pid(f.place);
       });
       const maxW = Math.max(1, ...d.edges.map(e => e.weight));   // views expect weights in 0..1

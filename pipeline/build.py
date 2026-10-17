@@ -132,7 +132,11 @@ def load_flags() -> pd.DataFrame:
     else:
         print("[build] WARNING: testimony_flags.csv not found — run claims.py first")
 
-    if rules_path.exists():
+    rules_json = RAW_DIR / "flags.json"   # what rules.py actually writes
+    if rules_json.exists():
+        frames.append(pd.read_json(rules_json))
+        print(f"[build] Loaded rules flags: {len(frames[-1])} rows")
+    elif rules_path.exists():
         frames.append(pd.read_csv(rules_path))
         print(f"[build] Loaded rules flags: {len(frames[-1])} rows")
     else:
