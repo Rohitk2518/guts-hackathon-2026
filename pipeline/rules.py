@@ -1,4 +1,5 @@
 import pandas as pd
+from lectures import get_lectures
 
 
 def load_stays(path="data/security_logs_clean.csv"):
@@ -40,10 +41,50 @@ def check_out_of_hours(stays, hours):
     return flags
 
 
+def load_people(path="data/people_clean.csv"):
+    """Load Rohit's cleaned student table."""
+    return pd.read_csv(path)
+
+
+def check_lectures(stays, people, lectures):
+    """Rule LECTURE: every student must attend their subject's lecture once."""
+    flags = []
+    for _, person in people.iterrows():
+        subject = person["subject"]
+        wanted = lectures[lectures["subject"] == subject]
+        if wanted.empty:
+            # We cannot check this student, so this is information, not an accusation
+            flags.append({
+                "student_id": person["student_id"],
+                "name": person["name"],
+                "rule": "LECTURE",
+                "severity": "low",
+                "detail": f"No lecture is listed for {subject}, so attendance cannot be checked",
+            })
+            continue
+        lecture = wanted.iloc[0]
+        mine = stays[(stays["student_id"] == person["student_id"])
+                     & (stays["location"] == lecture["building"])]
+        # Attended = a stay in the right building that overlaps the lecture window
+        attended = ((mine["check_in_minutes"] < lecture["end_min"])
+                    & (mine["check_out_minutes"] > lecture["start_min"])).any()
+        if not attended:
+            flags.append({
+                "student_id": person["student_id"],
+                "name": person["name"],
+                "rule": "LECTURE",
+                "severity": "high",
+                "detail": f"No stay in {lecture['building']} during the {subject} lecture ({lecture['start_min']}-{lecture['end_min']} min)",
+            })
+    return flags
+
+
 if __name__ == "__main__":
     stays = load_stays()
     hours = load_building_hours()
-    flags = check_out_of_hours(stays, hours)
-    print("OOH flags:", len(flags))
+    people = load_people()
+    lectures = get_lectures()
+    flags = check_out_of_hours(stays, hours) + check_lectures(stays, people, lectures)
+    print("Total flags:", len(flags))
     for f in flags:
         print(f)
