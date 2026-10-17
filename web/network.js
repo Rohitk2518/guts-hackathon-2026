@@ -1,11 +1,6 @@
 /* network.js: D3 force graph + reveal animation (Danielle)
  * Before reveal: kingpin looks like any clean student.
  * Reveal: kingpin pulls to centre in gold, dashed links animate, unconnected clean students fade.
- *
- * Built to cope with the real data.json: ~160 students and thousands of edges with weights well above 1.
- * - edges that reference an unknown student id are skipped (and logged), not allowed to crash the graph
- * - only the strongest edges are drawn by default (slider lets you lower the cut-off)
- * - widths, distances and node sizes are scaled from the data, not hard-coded for 0..1 weights
  */
 (function () {
   let sim, svg, layer, zoom, avSel, nodeSel, linkSel, labelSel, ringSel, el, data, W, H, focusKey = null;
@@ -22,9 +17,6 @@
   }
 
   function build() {
-    if (sim) sim.stop();
-    selectEdges();
-
     const wrap = el.querySelector('#network-wrap');
     wrap.innerHTML = `<svg id="network-svg"><defs><clipPath id="net-clip" clipPathUnits="objectBoundingBox"><circle cx=".5" cy=".5" r=".5"/></clipPath></defs></svg>
       <div class="net-controls">
@@ -40,24 +32,21 @@
     zoom = d3.zoom().scaleExtent([.4, 4]).on('zoom', ev => layer.attr('transform', ev.transform));
     svg.call(zoom);
 
-    // weighted degree over all valid edges, scaled into a modest radius range
-    const deg = {};
-    validEdges.forEach(e => { deg[e.a] = (deg[e.a] || 0) + e.weight; deg[e.b] = (deg[e.b] || 0) + e.weight; });
-    const maxDeg = d3.max(Object.values(deg)) || 1;
-    const radius = s => 6 + 6 * Math.sqrt((deg[s.id] || 0) / maxDeg) + (s.flagged ? 3 : 0);
-
-    const nodes = data.students.map(s => ({ id: s.id, s, r: radius(s) }));
+    const nodes = data.students.map(s => ({ id: s.id, s, r: 6 + Math.sqrt(degree(s.id)) * 3 }));
     const idx = Object.fromEntries(nodes.map(n => [n.id, n]));
-    const links = shownEdges.map(e => ({ source: idx[e.a], target: idx[e.b], e }));
+    // ponytail: thousands of co-presence edges is a hairball; keep the strongest plus every mastermind link
+    const MAX_LINKS = 300, kp = data.kingpin;
+    const strong = data.edges.slice().sort((a, b) => b.weight - a.weight).slice(0, MAX_LINKS);
+    // plus every mastermind link and each scored student's 15 strongest, so suspects never float alone
+    const scored = data.edges.filter(e => App.byId[e.a].score > 0 || App.byId[e.b].score > 0).sort((a, b) => b.weight - a.weight);
+    const perSuspect = {};
+    const own = scored.filter(e => [e.a, e.b].some(id => App.byId[id].score > 0 && (perSuspect[id] = (perSuspect[id] || 0) + 1) <= 15));
+    const shown = [...new Set([...strong, ...own, ...data.edges.filter(e => e.a === kp || e.b === kp)])];
+    const links = shown.map(e => ({ source: idx[e.a], target: idx[e.b], e }));
 
-    const width = d3.scaleSqrt().domain([0, maxW]).range([.6, 5]);
-    const strength = w => 0.03 + 0.5 * (w / maxW);
-    const distance = w => 150 - 100 * (w / maxW);
-
-    linkSel = svg.append('g').selectAll('line').data(links).join('line')
-      .attr('class', 'link').attr('stroke-width', d => width(d.e.weight)).attr('opacity', .35);
-    linkSel.append('title').text(d =>
-      `${App.byId[d.e.a].name} and ${App.byId[d.e.b].name}: ${d.e.overlap_min} min at ${placeName(d.e.place)}`);
+    linkSel = layer.append('g').selectAll('line').data(links).join('line')
+      .attr('class', 'link').attr('stroke-width', d => 1 + d.e.weight * 6).attr('opacity', .7);
+    linkSel.append('title').text(d => `${App.byId[d.e.a].name} and ${App.byId[d.e.b].name}: ${d.e.overlap_min} min at ${(App.placeById[d.e.place] || {}).name || d.e.place}`);
 
     const g = layer.append('g').selectAll('g').data(nodes).join('g').style('cursor', 'pointer')
       .on('click', (ev, d) => App.selectStudent(d.id))
@@ -76,18 +65,15 @@
     labelSel = g.append('text').attr('class', 'node-label').attr('dy', d => d.r + 13).text(d => d.s.name.split(' ')[0]);
 
     sim = d3.forceSimulation(nodes)
-      .force('link', d3.forceLink(links).distance(d => distance(d.e.weight)).strength(d => strength(d.e.weight)))
-      .force('charge', d3.forceManyBody().strength(charge))
-      .force('collide', d3.forceCollide(d => d.r + 3))
-      .force('x', d3.forceX(W / 2).strength(.06))   // gentle pull stops loose nodes drifting away
-      .force('y', d3.forceY(H / 2).strength(.08))
-      .force('bounds', clampToBounds)
-      .stop();
-
-    // settle the layout before the first paint so the opening view is already contained
-    for (let i = 0; i < 250; i++) sim.tick();
-    render();
-    sim.on('tick', render).alpha(.15).restart();
+      .force('link', d3.forceLink(links).distance(d => 190 - d.e.weight * 120).strength(d => .2 + d.e.weight * .6))
+      .force('charge', d3.forceManyBody().strength(-380))
+      .force('collide', d3.forceCollide(d => d.r + 12))
+      .force('center', d3.forceCenter(W / 2, H / 2))
+      .force('x', d3.forceX(W / 2).strength(.05)).force('y', d3.forceY(H / 2).strength(.07))   // keep everyone on screen
+      .on('tick', () => {
+        linkSel.attr('x1', d => d.source.x).attr('y1', d => d.source.y).attr('x2', d => d.target.x).attr('y2', d => d.target.y);
+        g.attr('transform', d => `translate(${d.x},${d.y})`);
+      });
 
     applyReveal(App.state.revealMode, false);
     controls(wrap);
@@ -142,8 +128,7 @@
     if (!sim) return;
     const kp = data.kingpin;
     const connected = new Set([kp]);
-    shownEdges.forEach(e => { if (e.a === kp) connected.add(e.b); if (e.b === kp) connected.add(e.a); });
-    const faded = d => on && !d.s.flagged && !connected.has(d.id);
+    data.edges.forEach(e => { if (e.a === kp) connected.add(e.b); if (e.b === kp) connected.add(e.a); });
     const t = d3.transition().duration(animate === false ? 0 : 900);
 
     nodeSel.transition(t)
@@ -152,14 +137,14 @@
       .attr('opacity', d => (on && !d.s.flagged && !connected.has(d.id) ? .15 : 1));
     avSel.transition(t).attr('opacity', d => (on && !d.s.flagged && !connected.has(d.id) ? .15 : 1));   // faces fade with their disc
     labelSel.transition(t)
-      .attr('opacity', d => (on && d.id === kp ? 1 : (d.s.flagged && !faded(d) ? 1 : 0)))
-      .text(d => (on && d.id === kp ? d.s.name : firstName(d.s)));
-    ringSel.attr('class', d => (on && d.id === kp ? 'pulse' : null))
+      .attr('opacity', d => (on && !d.s.flagged && !connected.has(d.id) ? .1 : 1))
+      .text(d => (on && d.id === kp ? d.s.name : d.s.name.split(' ')[0]));
+    ringSel.attr('class', d => (on && d.id === kp ? 'pulse' : null)).attr('stroke', 'var(--gold)')
       .attr('opacity', d => (on && d.id === kp ? .8 : 0));
     linkSel.classed('kingpin-link', d => on && (d.e.a === kp || d.e.b === kp));
     linkSel.transition(t)
       .attr('stroke', d => (on && (d.e.a === kp || d.e.b === kp) ? 'var(--gold)' : null))
-      .attr('opacity', d => (on ? ((d.e.a === kp || d.e.b === kp) ? 1 : .06) : .35));
+      .attr('opacity', d => (on ? ((d.e.a === kp || d.e.b === kp) ? 1 : .15) : .7));
 
     // pin kingpin to centre on reveal
     sim.nodes().forEach(n => {
@@ -175,38 +160,29 @@
     k.textContent = App.state.revealMode ? `${App.byId[data.kingpin].name} is the mastermind.` : '';
   }
 
-  function updateEdgeInfo() {
-    const info = el.querySelector('#edge-info');
-    if (info) info.textContent = `${shownEdges.length} of ${validEdges.length} links shown` +
-      (skipped ? ` · ${skipped} skipped (unknown student id)` : '');
-  }
-
   window.Views = window.Views || {};
   window.Views.network = {
     mount(container, d) {
-      el = container; data = d;
-      prepareEdges();
+      el = container; data = d; focusKey = null;
       el.innerHTML = `
         <div class="toolbar">
           <h2 style="margin:0">Network</h2>
           <button class="btn gold" id="reveal"></button>
           <strong id="kp-name" style="color:var(--gold)"></strong>
-          <label>Min link strength
-            <input type="range" id="minw" min="0" max="${Math.ceil(maxW * 20) / 20}" step="0.05" value="${minW}">
-          </label>
-          <span class="muted" style="font-size:13px" id="edge-info"></span>
+          <span class="muted" style="font-size:13px">Line width = time together, corrected for crowd size. Node size = connections.</span>
         </div>
         <div id="network-wrap"></div>
-        <div class="legend">
-          <span><i style="background:var(--alert);border-radius:50%"></i>High score</span>
-          <span><i style="background:var(--warn);border-radius:50%"></i>Medium</span>
-          <span><i style="background:var(--low);border-radius:50%"></i>Low</span>
-          <span><i style="background:var(--clean);border-radius:50%"></i>Clean</span>
-          <span><i style="background:var(--gold);border-radius:50%"></i>Mastermind</span>
-          <span>Line width = time together, corrected for crowd size. Hover a node for its name.</span>
-        </div>`;
+        <div class="legend">${GROUPS.map(([k, label]) => {
+          const n = data.students.filter(s => inGroup(k, s)).length;
+          return `<button class="legend-btn" data-g="${k}" ${n ? '' : 'disabled'}><i style="background:${k === 'kp' ? 'var(--gold)' : COLOR[k]}"></i>${label} <b>${k === 'kp' ? '' : n}</b></button>`;
+        }).join('')}<span class="muted">Click a group to find them. Scroll to zoom, drag to pan.</span></div>`;
+      el.querySelector('.legend').onclick = e => {
+        const b = e.target.closest('.legend-btn');
+        if (!b) return;
+        if (b.dataset.g === 'kp' && !App.state.revealMode) App.setState({ revealMode: true });
+        applyFocus(focusKey === b.dataset.g ? null : b.dataset.g);
+      };
       el.querySelector('#reveal').onclick = () => App.setState({ revealMode: !App.state.revealMode });
-      el.querySelector('#minw').onchange = e => { minW = +e.target.value; build(); };
       build();
       button();
     },
