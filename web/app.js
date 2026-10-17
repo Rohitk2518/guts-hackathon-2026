@@ -23,11 +23,11 @@
   window.Views = window.Views || {};
 
   const TABS = [
-    { mode: 'summary',  label: 'Summary' },
-    { mode: 'timeline', label: 'Timeline' },
-    { mode: 'network',  label: 'Network' },
+    { mode: 'summary',  label: 'Case' },
+    { mode: 'story',    label: 'Story' },
     { mode: 'map',      label: 'Map' },
-    { mode: 'story',    label: '▶ Story' }
+    { mode: 'timeline', label: 'Timeline' },
+    { mode: 'network',  label: 'Network' }
   ];
 
   const App = {
@@ -44,6 +44,16 @@
       return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
     },
     isNight(min) { return min < 360 || min >= 1260; },
+    /* "A, B, ... and Z were all in X" -> "18 students were all in X"; the names still show as chips */
+    shortText(f) {
+      return f.students.length > 4 ? f.text.replace(/^[^.]*? and [^.]*? were all in/, `${f.students.length} students were all in`) : f.text;
+    },
+    /* display name for a place id; claims can have no place at all */
+    placeName: id => id == null ? 'No place given' : App.esc((App.placeById[id] || {}).name || id),
+    /* escape data before putting it into innerHTML */
+    esc: s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])),
+    /* flag severity -> chip class ('' = high/red); accepts med or medium */
+    sev(f) { return { med: 'med', medium: 'med', low: 'low' }[String(f.severity).toLowerCase()] || ''; },
 
     subscribe(fn) { listeners.push(fn); },
 
@@ -64,7 +74,7 @@
     renderChrome() {
       document.getElementById('clock-time').textContent = App.fmt(state.currentTime);
       document.getElementById('clock-icon').textContent =
-        state.currentTime != null && App.isNight(state.currentTime) ? '🌙' : '☀';
+        state.currentTime != null && App.isNight(state.currentTime) ? 'Night' : 'Day';
       document.querySelectorAll('.tab').forEach(t =>
         t.classList.toggle('active', t.dataset.mode === state.mode));
     },
@@ -85,7 +95,71 @@
       }
     },
 
+    /* The pipeline writes places in several spellings ("boyd orr building", "QMU", "the Boydy").
+     * Map every one to a building id once here so all views can use placeById.
+     * ponytail: belongs in build.py; delete this when the pipeline emits building ids. */
+    normalise(d) {
+      const key = s => String(s ?? '').toLowerCase().replace(/^the\s+/, '').replace(/[^a-z]+/g, ' ').trim();
+      const ids = {};
+      d.buildings.forEach(b => [b.id.replace(/_/g, ' '), b.name, b.name.replace(/\s*building$/i, '')]
+        .forEach(n => (ids[key(n)] = b.id)));
+      const ALIAS = {   // spoken names from testimonies -> building name
+        qmu: 'queen margaret union', 'queen maragret building': 'queen margaret union',
+        guu: 'glasgow university union', union: 'glasgow university union',
+        hive: 'the hive', boydy: 'boyd orr building', park: 'kelvingrove park', kelvingrove: 'kelvingrove park',
+        'kelvin grove': 'kelvingrove park', 'kg skate park': 'kelvingrove park', wolfson: 'wolfson medical building',
+        'wolfson cafe': 'wolfson medical building', 'medicine building': 'wolfson medical building', cloisters: 'main building'
+      };
+      const pid = p => ids[key(ALIAS[key(p)] || p)] || p;   // unknown places ("home", "Tesco") stay as written
+      // drop buildings that are only a misspelling of another one
+      d.buildings = d.buildings.filter(b => !ALIAS[key(b.name)] || ids[key(ALIAS[key(b.name)])] === b.id);
+      d.students.forEach(s => {
+        s.stays.forEach(x => {
+          x.place = pid(x.place);
+          if (x.end < x.start) x.end += 1440;   // "2321-0147" crosses midnight: views expect end > start
+        });
+        s.claims.forEach(c => {
+          c.place = pid(c.place);
+          // half-open claims ("from 10 am"): assume an hour, marked so the card can say so
+          if (c.start == null && c.end != null) { c.start = c.end - 60; c.approx = true; }
+          if (c.end == null && c.start != null) { c.end = c.start + 60; c.approx = true; }
+        });
+      });
+      // edges to an id missing from the student table (e.g. a mistyped ID in the logs) would crash the graph
+      const known = new Set(d.students.map(s => s.id));
+      const dropped = d.edges.length - (d.edges = d.edges.filter(e => known.has(e.a) && known.has(e.b))).length;
+      if (dropped) console.warn(`data.json: dropped ${dropped} edges to unknown student ids`);
+      d.edges.forEach(e => (e.place = pid(e.place)));
+      d.findings.forEach(f => {
+        // testimony findings carry their place and time only in the text: "'the park' 22:00–02:20"
+        const m = f.time_start == null && /'([^']+)'\s+(\d\d):(\d\d)\s*[–-]\s*(\d\d):(\d\d)/.exec(f.text || '');
+        if (m) { f.place = m[1]; f.time_start = +m[2] * 60 + +m[3]; f.time_end = +m[4] * 60 + +m[5]; }
+        f.place = pid(f.place);
+      });
+      const maxW = Math.max(1, ...d.edges.map(e => e.weight));   // views expect weights in 0..1
+      d.edges.forEach(e => (e.weight /= maxW));
+    },
+
+    // dark/light toggle; the icon shows the mode you will switch to
+    initTheme() {
+      const btn = document.getElementById('theme-btn'), root = document.documentElement;
+      const SUN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>';
+      const MOON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg>';
+      const paint = () => {
+        const dark = root.dataset.theme !== 'light';
+        btn.innerHTML = dark ? SUN : MOON;
+        btn.setAttribute('aria-label', dark ? 'Switch to light mode' : 'Switch to dark mode');
+      };
+      btn.onclick = () => {
+        root.dataset.theme = root.dataset.theme === 'light' ? 'dark' : 'light';
+        try { localStorage.setItem('theme', root.dataset.theme); } catch (e) { /* private window: theme just won't persist */ }
+        paint();
+      };
+      paint();
+    },
+
     async boot() {
+      App.initTheme();
       try {
         const res = await fetch('data.json');
         App.data = await res.json();
@@ -95,7 +169,16 @@
           '<p>Open via a web server, not file://. Run <code>python -m http.server</code> in <code>web/</code>.</p></div>';
         return;
       }
-      App.data.students.forEach(s => (App.byId[s.id] = s));
+      // fill fields the pipeline may leave out, so every view can rely on them
+      App.data.students.forEach(s => {
+        s.flags = s.flags || []; s.stays = s.stays || []; s.claims = s.claims || [];
+        s.score = s.score ?? 0;
+        if (/^\s*[[{]/.test(s.llm_reasoning || '')) s.llm_reasoning = null;   // pipeline sometimes writes raw JSON here
+        if (s.flagged == null) s.flagged = s.flags.length > 0;
+        s.isKingpin = s.id === App.data.kingpin;
+        App.byId[s.id] = s;
+      });
+      App.normalise(App.data);
       App.data.buildings.forEach(b => (App.placeById[b.id] = b));
       document.getElementById('mock-badge').hidden = !(App.data.meta && App.data.meta.mock);
 

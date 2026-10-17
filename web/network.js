@@ -54,6 +54,9 @@
     const node = wrap.querySelector('svg');
     W = node.clientWidth || 900; H = node.clientHeight || 640;
     svg = d3.select(node);
+    layer = svg.append('g');
+    zoom = d3.zoom().scaleExtent([.4, 4]).on('zoom', ev => layer.attr('transform', ev.transform));
+    svg.call(zoom);
 
     // weighted degree over all valid edges, scaled into a modest radius range
     const deg = {};
@@ -74,7 +77,7 @@
     linkSel.append('title').text(d =>
       `${App.byId[d.e.a].name} and ${App.byId[d.e.b].name}: ${d.e.overlap_min} min at ${placeName(d.e.place)}`);
 
-    const g = svg.append('g').selectAll('g').data(nodes).join('g').style('cursor', 'pointer')
+    const g = layer.append('g').selectAll('g').data(nodes).join('g').style('cursor', 'pointer')
       .on('click', (ev, d) => App.selectStudent(d.id))
       .call(d3.drag()
         .on('start', (ev, d) => { if (!ev.active) sim.alphaTarget(.3).restart(); d.fx = d.x; d.fy = d.y; })
@@ -153,7 +156,7 @@
 
   function button() {
     const b = el.querySelector('#reveal');
-    b.textContent = App.state.revealMode ? '↩ Hide the Mastermind' : '👁 Reveal the Mastermind';
+    b.textContent = App.state.revealMode ? 'Hide the mastermind' : 'Reveal the mastermind';
     const k = el.querySelector('#kp-name');
     k.textContent = App.state.revealMode ? `${App.byId[data.kingpin].name} is the mastermind.` : '';
   }
@@ -194,8 +197,8 @@
       button();
     },
     update(state, patch) {
-      if ('revealMode' in patch) { applyReveal(state.revealMode, true); button(); }
+      if ('revealMode' in patch) { applyReveal(state.revealMode, true); button(); if (focusKey) applyFocus(focusKey); }
     },
-    unmount() { if (sim) sim.stop(); sim = null; }
+    unmount() { if (sim) sim.stop(); sim = null; svg = null; focusKey = null; }
   };
 })();

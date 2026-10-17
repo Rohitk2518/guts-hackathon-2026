@@ -67,7 +67,7 @@
     // night shading (00:00-06:00 and 21:00-24:00)
     [[0, 360], [1260, 1440]].forEach(([a, b]) =>
       svg.append('rect').attr('x', x(a)).attr('y', M.top).attr('width', x(b) - x(a))
-        .attr('height', rows.length * LANE).attr('fill', 'var(--night)').attr('opacity', .7));
+        .attr('height', rows.length * LANE).attr('fill', 'var(--night)'));
 
     // axis
     svg.append('g').attr('class', 'axis').attr('transform', `translate(0,${M.top - 6})`)
@@ -86,7 +86,7 @@
       lane.append('text')
         .attr('class', 'lane-label' + (App.state.selectedStudent === s.id ? ' selected' : ''))
         .attr('x', M.left - 10).attr('y', LANE / 2 + 1).attr('text-anchor', 'end').attr('dominant-baseline', 'middle')
-        .text(s.name + (s.flagged ? ` · ${s.score.toFixed(1)}` : ''))
+        .text(s.name + (s.flagged ? ` (${s.score.toFixed(1)})` : ''))
         .on('click', () => App.selectStudent(s.id));
 
       // stays
@@ -110,7 +110,8 @@
       });
 
       // flags (outline + marker)
-      s.flags.filter(f => f.start != null).forEach(f => {
+      let lastLabel = -Infinity;
+      s.flags.filter(f => f.start != null).sort((a, b) => a.start - b.start).forEach(f => {
         const w = Math.max(6, x(f.end) - x(f.start));
         const c = sevColor[f.severity] || sevColor.low;
         // label is hidden until the flag box is hovered
