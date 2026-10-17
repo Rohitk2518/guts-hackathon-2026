@@ -64,6 +64,28 @@
       return (App._ranked = App.data.students.filter(s => s.score > 0 && !s.isKingpin)
         .sort((a, b) => b.score - a.score || b.flags.length - a.flags.length || (links[b.id] || 0) - (links[a.id] || 0)));
     },
+    /* the case against the kingpin: time spent with students who broke a rule, and how that ranks against everyone.
+     * Used by the story reveal and the case page so both quote the same numbers. */
+    kingpinCase() {
+      if (App._kpCase !== undefined) return App._kpCase;
+      const d = App.data, kp = App.byId[d.kingpin];
+      if (!kp) return (App._kpCase = null);
+      const breakers = new Set(d.students.filter(s => s.flags.length).map(s => s.id));
+      const mins = {}, withKp = {};
+      d.edges.forEach(e => [[e.a, e.b], [e.b, e.a]].forEach(([a, b]) => {
+        if (!breakers.has(b) || a === b) return;
+        mins[a] = (mins[a] || 0) + (e.overlap_min || 0);
+        if (a === kp.id) (withKp[b] = withKp[b] || { s: App.byId[b], min: 0, best: e }).min += e.overlap_min || 0;
+        if (a === kp.id && e.overlap_min > withKp[b].best.overlap_min) withKp[b].best = e;
+      }));
+      const contacts = Object.values(withKp).sort((x, y) => y.min - x.min);
+      const minutes = mins[kp.id] || 0;
+      return (App._kpCase = { kp, contacts, minutes, breakers: breakers.size,
+        rank: 1 + Object.entries(mins).filter(([id, m]) => id !== kp.id && m > minutes).length,
+        students: d.students.length });
+    },
+    /* 898 -> "14 h 58 min" */
+    dur: m => [m >= 60 && `${Math.floor(m / 60)} h`, m % 60 && `${m % 60} min`].filter(Boolean).join(' ') || '0 min',
     /* display name for a place id; claims can have no place at all */
     placeName: id => id == null ? 'No place given' : App.esc((App.placeById[id] || {}).name || id),
     /* escape data before putting it into innerHTML */
@@ -224,4 +246,5 @@
   };
 
   window.App = App;
+  console.assert(App.dur(898) === '14 h 58 min' && App.dur(60) === '1 h' && App.dur(5) === '5 min', 'dur');
 })();

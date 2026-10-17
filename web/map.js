@@ -300,7 +300,7 @@
     q('#map-suspects').innerHTML = list.map(s => `<li><button data-id="${App.esc(s.id)}" class="${state.selectedStudent === s.id ? 'on' : ''}">
         ${App.avatar(s, 30)}
         <span>${App.esc(s.name)}<small>${placeOf[s.id] ? place(placeOf[s.id]) : 'not on campus now'}</small></span>
-        <b>${s.isKingpin ? 'mastermind' : s.score.toFixed(1)}</b></button></li>`).join('') || '<li class="empty">No one has a suspicion score yet.</li>';
+        <b>${s.isKingpin ? 'kingpin' : s.score.toFixed(1)}</b></button></li>`).join('') || '<li class="empty">No one has a suspicion score yet.</li>';
   }
 
   function setPlaying(on) {
@@ -360,11 +360,11 @@
               <div class="stat"><div class="stat-n alert" id="st-alerts">0</div><div class="stat-l">alerts now</div></div>
               <div class="stat wide" id="st-kp" hidden><div class="stat-n gold"></div><div class="stat-l"></div></div>
             </div>
-            <div class="panel"><h3>Suspects</h3><ul class="suspects" id="map-suspects"></ul></div>
+            <div class="panel"><h3>Likely conspirators</h3><ul class="suspects" id="map-suspects"></ul></div>
             <div class="panel"><h3>Right now</h3><ul class="feed" id="map-feed"></ul></div>
             <div class="panel" id="map-who" hidden></div>
             <div class="panel opts">
-              <label><input type="checkbox" id="opt-names"> Show suspect names</label>
+              <label><input type="checkbox" id="opt-names"> Show conspirator names</label>
               <label><input type="checkbox" id="opt-claims" checked> Show testimony claims</label>
             </div>
             <div class="panel legend">
@@ -372,7 +372,7 @@
               <span><i style="background:var(--warn)"></i>Medium</span>
               <span><i style="background:var(--low)"></i>Low</span>
               <span><i style="background:var(--clean)"></i>Not flagged</span>
-              <span><i style="background:var(--gold)"></i>Mastermind, after the reveal</span>
+              <span><i style="background:var(--gold)"></i>Kingpin, after the reveal</span>
               <span><i style="border:2px dashed var(--alert);background:none"></i>Where they say they were</span>
               <span><i style="background:var(--indoor);border-radius:2px"></i>Building open</span>
               <span><i style="border:1px dashed var(--clean);border-radius:2px;background:none"></i>Building closed</span>

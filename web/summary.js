@@ -10,17 +10,22 @@
       const top = data.findings.slice().sort((a, b) => a.rank - b.rank).slice(0, 3);
       const place = App.placeName;
       const suspects = App.rankSuspects().slice(0, 3);
+      // after the reveal the brief states the conclusion, with the same numbers as the story reveal
+      const kc = App.kingpinCase(), kp = kc && kc.kp;
 
       el.innerHTML = `
+        <div class="case-page">
         <section class="brief">
           <h1>Someone planned to burn down the Boyd Orr.</h1>
           <p class="lead">
             We checked <b>${data.students.length} students</b> against ${swipes} building log entries and their own statements.
             <b class="sus">${flagged} stories don't hold up.</b>
-            One person organised it, and on paper they look clean. Their name is <span class="redacted">hidden</span>.
+            ${kp && App.state.revealMode
+              ? `The kingpin is <b class="kp">${esc(kp.name)}</b>. They broke no rules, yet spent a combined ${App.dur(kc.minutes)} with ${kc.contacts.length} of the ${kc.breakers} students who did${kc.contacts.length ? `: ${kc.contacts.map(x => esc(x.s.name)).join(', ')}` : ''}${kc.rank === 1 ? ', more than any other student' : ''}.`
+              : `One person, the kingpin, organised it, and on paper they look clean. Their name is <span class="redacted" aria-label="hidden">Name withheld</span>.`}
           </p>
 
-          ${suspects.length ? `<h2>Top suspects</h2>
+          ${suspects.length ? `<h2>Likely conspirators</h2>
           <ol class="suspect-list">
             ${suspects.map(s => `
               <li>
@@ -48,7 +53,14 @@
             <button class="btn secondary" id="to-map">Open the map</button>
             <button class="btn secondary" id="to-network">See who met whom</button>
           </div>
-        </section>`;
+          <p class="method">Every view is drawn straight from the security logs, building data and statements, so the same dashboard works for any day's data.</p>
+        </section>
+        <figure class="exhibit">
+          <img src="boyd-orr.jpg" alt="The Boyd Orr Building, University of Glasgow" width="768" height="1024">
+          <figcaption><b>Exhibit A.</b> The Boyd Orr Building, the target.
+            <small>Photo: Thomas Nugent, CC BY-SA 2.0, via Wikimedia Commons</small></figcaption>
+        </figure>
+        </div>`;
 
       el.querySelectorAll('.finding').forEach(c => {
         c.onclick = c.onkeydown = ev => {

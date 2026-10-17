@@ -13,18 +13,26 @@
 
   // final step: the kingpin's strongest link to a flagged student sets the time and place
   function revealStep() {
-    const kp = App.byId[data.kingpin];
-    if (!kp) return null;
-    const links = data.edges.filter(e => (e.a === kp.id || e.b === kp.id))
-      .map(e => ({ e, other: App.byId[e.a === kp.id ? e.b : e.a] })).filter(l => l.other && l.other.flagged)
-      .sort((a, b) => b.e.weight - a.e.weight);
-    const top = links[0];
-    const stay = top && kp.stays.find(st => st.place === top.e.place);
+    const c = App.kingpinCase();
+    if (!c) return null;
+    const top = c.contacts[0], stay = top && c.kp.stays.find(st => st.place === top.best.place);
     return {
-      reveal: true, kp, links,
-      time_start: stay ? stay.start : App.state.currentTime, place: top ? top.e.place : null,
-      students: [kp.id, ...links.map(l => l.other.id)]
+      reveal: true, kp: c.kp,
+      time_start: stay ? stay.start : App.state.currentTime, place: top ? top.best.place : null,
+      students: [c.kp.id, ...c.contacts.map(x => x.s.id)]
     };
+  }
+
+  // why the kingpin stands out, as short sentences built from the data (shown on screen and read aloud)
+  function pitch() {
+    const c = App.kingpinCase(), kp = c.kp, top = c.contacts[0];
+    return [
+      kp.flags.length ? `Broke ${kp.flags.length} rule${kp.flags.length > 1 ? 's' : ''}.` : 'Broke no rules, so no check flags them.',
+      kp.testimony ? 'Gave a statement.' : 'Gave no statement, so there is no alibi to check.',
+      `Spent a combined ${App.dur(c.minutes)} with ${c.contacts.length} of the ${c.breakers} students who broke a rule.`,
+      c.rank === 1 ? 'That is more time with rule-breakers than any other student.' : `That ranks ${c.rank} of ${c.students} students.`,
+      top ? `Longest together: ${App.dur(top.best.overlap_min)} with ${top.s.name} at ${(App.placeById[top.best.place] || {}).name || top.best.place}.` : ''
+    ].filter(Boolean);
   }
 
   function glideTo(t) {
@@ -49,11 +57,10 @@
         <div class="story-when">${App.fmt(f.time_start)}, ${place(f.place)}</div>
         ${kpShown
           ? `<h2 class="story-kp">${esc(f.kp.name)}</h2>
-             <p>Never flagged by a single rule, yet met ${f.links.length} of the flagged students, more than anyone else.
-             Clean on paper, connected to everyone.</p>`
+             <ul class="story-case">${pitch().map(p => `<li>${esc(p)}</li>`).join('')}</ul>`
           : `<h2>One person keeps turning up.</h2>
              <p>They broke no rules. Their testimony checks out. But look who they were with.</p>
-             <button class="btn gold" id="story-reveal">Reveal the mastermind</button>`}` : `
+             <button class="btn gold" id="story-reveal">Reveal the kingpin</button>`}` : `
         <div class="story-when">${App.fmt(f.time_start)} to ${App.fmt(f.time_end)}, ${place(f.place)}</div>
         <p class="story-finding${App.shortText(f).length > 160 ? ' long' : ''}">${esc(App.shortText(f))}</p>`;
     // flagged and mastermind first; cap the chips so a 19-person finding stays readable
@@ -69,7 +76,7 @@
 
     const rv = el.querySelector('#story-reveal');
     if (rv) rv.onclick = () => { App.setState({ revealMode: true }); show(i); };
-    if (narrate && Views.speech) Views.speech.say(f.reveal ? (kpShown ? `The mastermind is ${f.kp.name}.` : 'One person keeps turning up.') : App.shortText(f));
+    if (narrate && Views.speech) Views.speech.say(f.reveal ? (kpShown ? `The kingpin is ${f.kp.name}. ${pitch().join(' ')}` :'One person keeps turning up.') : App.shortText(f));
     if (last) setAuto(false);
   }
 
