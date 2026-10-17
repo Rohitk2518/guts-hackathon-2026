@@ -96,7 +96,7 @@ README.md
     "name":     "Boyd Orr",
     "lat": 55.872, "lng": -4.291,
     "opens":    480,
-    "closes":   1320,
+    "closes":   1260,
     "lectures": [{ "subject": "Computing Science", "start": 600, "end": 720 }],
     "isOutdoor": false
   }],
@@ -145,10 +145,16 @@ README.md
 
 ### Stage 1 · `ingest.py` — Rohit
 
-- Parse `"0338-0716"` → `start=218, end=436`
+- Parse `"0338-0716"` → `check_in_minutes=218, check_out_minutes=436`
 - Parse `"{55.87 -4.29}"` → `lat=55.87, lng=-4.29`
+- Parse building opening hours from the source `opening_times` (`0800-2100` → `opens=480`, `closes=1260`); add 1440 to closing time for overnight hours (`2200-0200` → `1320`–`1560`), and treat `0000-0000` as open all day
 - Parse `"Chess Club; Drama"` → `["Chess Club", "Drama"]`
-- Build **subject alias dict** (`"Computer Science"` → `"Computing Science"`)
+- Derive `hair_colour_name` (for example, `#23d620` → `"green"`) from each hair-colour hex code
+- Map subject aliases to canonical names (`"Computer Science"` → `"Computing Science"`, `"English Lit"` → `"English Literature"`)
+- Preserve `Business` students and flag them with `is_unusual_subject`
+- Normalize Queen Margaret Union name variants to `QMU` and uppercase student/statement IDs
+- Add 1440 to security-log checkout minutes when a stay crosses midnight
+- Write cleaned files to `data/location_clean.csv`, `data/people_clean.csv`, `data/security_logs_clean.csv`, and `data/student_statements_clean.txt`; security log check-in/out values are minutes after midnight
 - Build **building alias dict** (`"Boyd Orr Bldg"` → `"Boyd Orr"`)
 - Print any unmatched names as warnings
 - Write `extra_places.csv` for Kelvingrove, QMU, etc.
