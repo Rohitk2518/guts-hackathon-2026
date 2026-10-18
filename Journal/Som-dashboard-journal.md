@@ -117,31 +117,33 @@ All views share one state: `currentTime`, `selectedStudent`, `mode`, `storyStep`
 - The last step gives five reasons the kingpin stands out (section 8).
 - Controls: Next/Back, arrow keys, dots, Autoplay (7 s per step), optional read-aloud.
 
-**Map.**
-- A real street map of campus; buildings sit at their real coordinates and show their opening hours.
-- Every student is a face, placed where the logs put them at the current minute. They walk between stays when the gap is 30 min or less.
-- The ring colour is the suspicion band, and a pulsing ring means flagged.
-- Closed buildings go grey and dashed. Dashed "ghosts" show where someone *said* they were.
-- At most 9 faces per building, then a **+N** badge that opens a "who's here" list (this fixed clicks landing on the wrong face).
-- **Right panel:** people on campus, live alerts, a "right now" feed, **Likely conspirators**, **Other irregularities**, options, legend.
-- Moment buttons jump to each finding.
-- Zoom and pan with wheel, pinch, drag or the + / − / ◎ buttons. Faces grow more slowly than the map.
-- Play the whole day at 1×, 2×, 5× or 10×.
+### Map
+- A real street map of the University of Glasgow campus with every building at its real coordinates.
+- Every student is a face (avatar), placed where the logs say they are at the current minute. Between two stays they walk in a straight line, if the gap is 30 minutes or less.
+- **Ring colour** = suspicion score. **Pulsing ring** = flagged.
+- **Buildings** turn grey and dashed when closed. Their opening hours are under each name.
+- **Dashed "ghosts"** show where a person *said* they were, so you can see the gap between claim and log.
+- **Crowds**: up to 9 faces per building, then a "+N" badge that opens a "who's here" list. This fixed people clicking the wrong face.
+- **Right panel**: people on campus now, live alerts, a "right now" feed, **Likely conspirators**, **Other irregularities**, options and legend.
+- **Moment buttons** across the top jump straight to each finding.
+- Zoom and pan: wheel, pinch, drag, plus the + / − / ◎ buttons. Faces grow more slowly than the map so they don't balloon.
+- Play button with speeds 1×, 2×, 5× and 10× runs the whole day.
 
-**Timeline (Danielle).**
-- One lane per student, with their avatar and score. By default it shows the **8 students with a high flag**; "Include clean students" shows everyone.
-- **Green bars** are logged stays and **blue bars** are claimed stays. **Red or amber boxes** are high or medium flags: hover for the rule, click for a popup with the details and an "Open interrogation card" button.
-- **Click a lane to expand it** into separate lines for stays, claims and flags, with labels. Anything with no time is listed as text underneath.
-- Checkboxes for clean students, stays and claims.
+### Timeline (Danielle)
+- One row per student, with bars for each logged stay (green) and each claim made in testimony (blue).
+- Flags are marked on the rows and can be clicked to open a pop-up explaining the discrepancy.
+- Rows can be expanded to view details of the stays, claims, flags, and any stays that are missing times.
+- The suspects with the most flags are listed by default in order of suspicion, and the chart can also be expanded to show "clean" non-flagged students.
+- Clicking on a student's name will open their interrogation file.
 - A draggable scrubber, or a click on the axis, moves the shared clock.
 
-**Network.**
-- One circle per student with their avatar, ringed in their suspicion colour.
-- A line means they were together; thicker means longer, in a quieter place. A bigger circle means they met more people.
-- Legend buttons (High, Medium, Low, Clean, Kingpin) zoom to a group and fade the rest.
-- **Reveal**: the kingpin turns gold and moves to the centre, his links turn into dashed gold lines, and anyone unlinked fades.
-- + / − / fit / full screen. Full screen keeps the legend and the Reveal button.
-- Only the 300 strongest links, each scored student's 15 strongest, and every kingpin link are drawn. All 4,965 made a hairball.
+### Network
+- One circle per student, ringed in their suspicion colour, with their avatar inside.
+- A line means two students were in the same place at the same time. A thicker line means more time together, in a quieter place. A bigger circle means they met more people.
+- Legend buttons (High, Medium, Low, Clean, Kingpin) zoom to that group and fade everyone else.
+- **Reveal the kingpin**: he turns gold and moves to the centre, his links become dashed gold lines, and students with no link to him fade.
+- + / − / fit / full-screen buttons. Full screen keeps the legend and the reveal button.
+- To stay readable, only some lines are drawn: the 300 strongest, each scored student's 15 strongest, and every kingpin link. With all 4,965 drawn it was an unreadable hairball.
 
 **Interrogation card (click anyone).**
 - Avatar, score and flag chips.
