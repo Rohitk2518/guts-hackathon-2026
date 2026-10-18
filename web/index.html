@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Boyd Orr Burndown</title>
+  <link rel="stylesheet" href="style.css">
+  <script>/* set the theme before first paint; dark by default */
+    try { document.documentElement.dataset.theme = localStorage.getItem('theme') || 'dark'; }
+    catch (e) { document.documentElement.dataset.theme = 'dark'; }
+  </script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">Boyd Orr Burndown<span id="mock-badge" class="mock-badge" hidden>Mock data</span><time id="case-date" class="case-date" hidden></time></div>
+    <nav class="tabs" id="tabs"></nav>
+    <div class="clock" id="clock"><span id="clock-time">--:--</span><span class="icon" id="clock-icon"></span></div>
+    <button class="theme-btn" id="theme-btn" aria-label="Switch to light mode"></button>
+  </header>
+
+  <main id="view"></main>
+
+  <!-- d3 is vendored so the demo works offline -->
+  <script src="vendor/d3.v7.min.js"></script>
+  <script src="app.js"></script>
+  <script src="summary.js"></script>
+  <script src="timeline.js"></script>
+  <script src="network.js"></script>
+  <!-- Som's modules register themselves on window.Views: map, story, card, speech -->
+  <script src="map.js" onerror="void 0"></script>
+  <script src="story.js" onerror="void 0"></script>
+  <script src="card.js" onerror="void 0"></script>
+  <script src="speech.js" onerror="void 0"></script>
+  <script src="trace.js"></script>
+  <script>App.boot();</script>
+</body>
+</html>

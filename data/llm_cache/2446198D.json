@@ -1,0 +1,26 @@
+{
+  "claims": [
+    {
+      "place": null,
+      "start": null,
+      "end": null,
+      "activity": "watching bad films in preparation for an upcoming bad movie society meetup",
+      "society": "bad movie society"
+    },
+    {
+      "place": "maths lecture",
+      "start": null,
+      "end": null,
+      "activity": "attending maths lecture",
+      "society": null
+    },
+    {
+      "place": "home",
+      "start": null,
+      "end": null,
+      "activity": "watching more terrible films",
+      "society": null
+    }
+  ],
+  "overnight_absence": false
+}

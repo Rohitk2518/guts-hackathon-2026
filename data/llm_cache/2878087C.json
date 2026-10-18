@@ -1,0 +1,68 @@
+{
+  "claims": [
+    {
+      "place": "Kelvin Building",
+      "start": null,
+      "end": null,
+      "activity": "lecture",
+      "society": null
+    },
+    {
+      "place": "Sir Alwyn Williams building",
+      "start": null,
+      "end": null,
+      "activity": "say hi to a pal",
+      "society": null
+    },
+    {
+      "place": "bagel mania",
+      "start": 720,
+      "end": null,
+      "activity": "having lunch",
+      "society": null
+    },
+    {
+      "place": "the library",
+      "start": null,
+      "end": null,
+      "activity": "at library",
+      "society": null
+    },
+    {
+      "place": "town",
+      "start": null,
+      "end": null,
+      "activity": "heading out to town",
+      "society": null
+    },
+    {
+      "place": "my friends",
+      "start": null,
+      "end": null,
+      "activity": "had pres",
+      "society": null
+    },
+    {
+      "place": "kelvingrove park",
+      "start": null,
+      "end": null,
+      "activity": "walked through park",
+      "society": null
+    },
+    {
+      "place": "town",
+      "start": null,
+      "end": null,
+      "activity": "realised dropped purse",
+      "society": null
+    },
+    {
+      "place": "the park",
+      "start": null,
+      "end": null,
+      "activity": "looking for dropped purse / found it by swings",
+      "society": null
+    }
+  ],
+  "overnight_absence": false
+}

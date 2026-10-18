@@ -1,0 +1,54 @@
+{
+  "claims": [
+    {
+      "place": "St Andrews building",
+      "start": 645,
+      "end": null,
+      "activity": "study",
+      "society": null
+    },
+    {
+      "place": "Kelvingrove park",
+      "start": null,
+      "end": 750,
+      "activity": "lunch break and walk around park",
+      "society": null
+    },
+    {
+      "place": "Wolfson",
+      "start": 780,
+      "end": 900,
+      "activity": "lecture",
+      "society": null
+    },
+    {
+      "place": "home",
+      "start": null,
+      "end": null,
+      "activity": "cook dinner and settle down for the evening",
+      "society": null
+    },
+    {
+      "place": "Wolfson",
+      "start": null,
+      "end": null,
+      "activity": "retrieve forgotten skateboard",
+      "society": null
+    },
+    {
+      "place": "the union",
+      "start": null,
+      "end": null,
+      "activity": "met up with soup-tasting gang",
+      "society": "soup-tasting gang"
+    },
+    {
+      "place": "home",
+      "start": null,
+      "end": null,
+      "activity": "skated home and called it a day",
+      "society": null
+    }
+  ],
+  "overnight_absence": false
+}

@@ -1,0 +1,33 @@
+{
+  "claims": [
+    {
+      "place": "library",
+      "start": null,
+      "end": null,
+      "activity": "went to the library",
+      "society": null
+    },
+    {
+      "place": "library",
+      "start": null,
+      "end": null,
+      "activity": "studying",
+      "society": null
+    },
+    {
+      "place": "Adam Smith",
+      "start": null,
+      "end": null,
+      "activity": "close up a group project",
+      "society": null
+    },
+    {
+      "place": "Glasgow University Union",
+      "start": null,
+      "end": null,
+      "activity": "blow off some steam",
+      "society": null
+    }
+  ],
+  "overnight_absence": false
+}

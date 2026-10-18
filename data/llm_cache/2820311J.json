@@ -1,0 +1,40 @@
+{
+  "claims": [
+    {
+      "place": "main building",
+      "start": 720,
+      "end": null,
+      "activity": "lecture",
+      "society": null
+    },
+    {
+      "place": "Boyd Orr",
+      "start": 840,
+      "end": null,
+      "activity": "in the lab",
+      "society": null
+    },
+    {
+      "place": "home",
+      "start": null,
+      "end": null,
+      "activity": "power nap",
+      "society": null
+    },
+    {
+      "place": "campus",
+      "start": null,
+      "end": null,
+      "activity": "returned to campus",
+      "society": null
+    },
+    {
+      "place": "library",
+      "start": null,
+      "end": null,
+      "activity": "went to the library",
+      "society": null
+    }
+  ],
+  "overnight_absence": false
+}

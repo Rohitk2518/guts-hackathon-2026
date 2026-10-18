@@ -1,0 +1,54 @@
+{
+  "claims": [
+    {
+      "place": "kelvin grove",
+      "start": null,
+      "end": null,
+      "activity": "run",
+      "society": null
+    },
+    {
+      "place": "home",
+      "start": null,
+      "end": null,
+      "activity": "shower",
+      "society": null
+    },
+    {
+      "place": "Adam Smith Building",
+      "start": 600,
+      "end": null,
+      "activity": "lecture",
+      "society": null
+    },
+    {
+      "place": "main building",
+      "start": null,
+      "end": null,
+      "activity": "sit on a bench",
+      "society": null
+    },
+    {
+      "place": "cloisters",
+      "start": null,
+      "end": null,
+      "activity": "sketch",
+      "society": null
+    },
+    {
+      "place": "GUU",
+      "start": 1020,
+      "end": null,
+      "activity": "meet up with folk from Rising Stars",
+      "society": "Rising Stars"
+    },
+    {
+      "place": "home",
+      "start": null,
+      "end": null,
+      "activity": "heading home",
+      "society": null
+    }
+  ],
+  "overnight_absence": false
+}

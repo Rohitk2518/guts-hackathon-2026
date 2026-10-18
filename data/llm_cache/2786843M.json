@@ -1,0 +1,33 @@
+{
+  "claims": [
+    {
+      "place": "St Andrews building",
+      "start": null,
+      "end": null,
+      "activity": "lecture",
+      "society": null
+    },
+    {
+      "place": "Wolfson Medical building",
+      "start": null,
+      "end": null,
+      "activity": "chilled with medic friends",
+      "society": null
+    },
+    {
+      "place": "Sir Alwyn Williams Building",
+      "start": null,
+      "end": null,
+      "activity": "nipped to",
+      "society": null
+    },
+    {
+      "place": "Queen Margaret Union",
+      "start": null,
+      "end": null,
+      "activity": "ending the day",
+      "society": null
+    }
+  ],
+  "overnight_absence": false
+}

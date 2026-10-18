@@ -1,0 +1,40 @@
+{
+  "claims": [
+    {
+      "place": "St Andrews Building",
+      "start": null,
+      "end": null,
+      "activity": "lecture",
+      "society": null
+    },
+    {
+      "place": "Adam Smith",
+      "start": 840,
+      "end": 1080,
+      "activity": "lecture",
+      "society": null
+    },
+    {
+      "place": "Nandos",
+      "start": 1080,
+      "end": null,
+      "activity": "dinner",
+      "society": null
+    },
+    {
+      "place": "boyd orr building",
+      "start": null,
+      "end": null,
+      "activity": "Acapella Society event",
+      "society": "Acapella Society"
+    },
+    {
+      "place": "library",
+      "start": null,
+      "end": 1440,
+      "activity": "studying",
+      "society": null
+    }
+  ],
+  "overnight_absence": false
+}
