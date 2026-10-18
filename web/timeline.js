@@ -21,7 +21,7 @@
   let svg, x, showAll = false, showStays = true, showClaims = true, el, data, drawn = false;
   const expanded = new Set();             // student ids whose lane is open (kept across redraws)
 
-  const sevColor = { high: 'var(--alert)', med: 'var(--warn)', low: 'var(--low)' };
+  const sevColor = { high: 'var(--alert)', med: 'var(--warn)', medium: 'var(--warn)', low: 'var(--low)' };   // data says "medium"
 
   /* ---- text helpers ---- */
   const tm = m => (m == null ? '?' : App.fmt(m));
