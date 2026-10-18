@@ -144,7 +144,11 @@ All views share one state: `currentTime`, `selectedStudent`, `mode`, `storyStep`
 - Play button with speeds 1×, 2×, 5× and 10× runs the whole day.
 
 ### Timeline (Danielle)
-- One row per student, with bars for each logged stay. Overnight stays are split at midnight. Flags are marked on the bars.
+- One row per student, with bars for each logged stay and each claim made in testimony.
+- Flags are marked on the rows and can be clicked to open a pop-up explaining the discrepancy.
+- Rows can be expanded to view details of the stays, claims, flags, and any stays that are missing times.
+- The suspects with the most flags are listed by default in order of suspicion, and the chart can also be expanded to show "clean" non-flagged students.
+- Clicking on a student's name will open their interrogation file.
 
 ### Network
 - One circle per student, ringed in their suspicion colour, with their avatar inside.
